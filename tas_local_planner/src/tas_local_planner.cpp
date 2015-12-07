@@ -36,8 +36,12 @@
 
  bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     //ros::spinOnce();
-    int numberRanges = sizeof(tlpLaserScan.ranges[320]);
-    ROS_INFO("Compute velocity command! #ranges: %i", numberRanges);
+    geometry_msgs::Twist outCmd;
+    if(tlpLaserScan.ranges[320] > 0.5) {
+        cmd_vel.linear.x = 0.5;
+    } else {
+        cmd_vel.linear.x = 0;
+    }
  }
  bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
 
