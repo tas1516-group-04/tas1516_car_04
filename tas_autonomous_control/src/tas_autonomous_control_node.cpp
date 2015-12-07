@@ -6,7 +6,7 @@ int main(int argc, char** argv)
     control autonomous_control;
 
     ros::Rate loop_rate(50);
-
+    autonomous_control.control_Mode.data = 1;
     while(ros::ok())
     {
         if(autonomous_control.control_Mode.data==0)
