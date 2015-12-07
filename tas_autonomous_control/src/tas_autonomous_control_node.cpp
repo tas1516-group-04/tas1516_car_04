@@ -11,7 +11,7 @@ int main(int argc, char** argv)
     {
         if(autonomous_control.control_Mode.data==0)
         {
-            ROS_INFO("Manually Control!");
+            //ROS_INFO("Manually Control!");
         }
         else
         {
@@ -22,7 +22,7 @@ int main(int argc, char** argv)
             }
             else
             {
-                ROS_INFO("Automatic Control!");
+                //ROS_INFO("Automatic Control!");
                 if(autonomous_control.cmd_linearVelocity>0)
                 {
                     autonomous_control.control_servo.x = 1550;
