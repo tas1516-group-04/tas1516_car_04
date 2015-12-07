@@ -24,11 +24,23 @@ int main(int argc, char** argv)
 	goal.target_pose.pose.orientation.x = 0.0;
 	goal.target_pose.pose.orientation.y = 0.0;
 	goal.target_pose.pose.orientation.z = 0.999;
-	goal.target_pose.pose.orientation.w = 0.01334;
+	goal.target_pose.pose.orientation.w = 0.0;
 
 	ROS_INFO("Sending goal");
 	client.sendGoal(goal);
 
+	bool finished_before_timeout = ac.waitForResult(ros::Duration(30.0));
 
+  	if (finished_before_timeout)
+  	{
+    	actionlib::SimpleClientGoalState state = ac.getState();
+    	ROS_INFO("Action finished: %s",state.toString().c_str());
+  	}
+  	else
+  	{
+  		actionlib::SimpleClientGoalState state = ac.getState();
+    	ROS_INFO("Action did not finish before the time out. Status: %s", state.toString().c_str());
+  	}
+	
 	return 0;
 }
