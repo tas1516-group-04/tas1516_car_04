@@ -13,7 +13,7 @@
  #ifndef TAS_LOCAL_PLANNER_CPP
  #define TAS_LOCAL_PLANNER_CPP
 
-sensor_msgs::LaserScan tlpLaserScan;
+sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
 
  namespace tas_local_planner {
 
@@ -39,6 +39,7 @@ private:
   costmap_2d::Costmap2DROS* costmap_ros_;
   ros::NodeHandle nodeHandle_;
   ros::Subscriber subScan_;
+  std::vector<geometry_msgs::PoseStamped> plan_;
 
   // functions
   //void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);

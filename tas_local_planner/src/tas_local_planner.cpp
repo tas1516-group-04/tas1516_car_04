@@ -7,8 +7,9 @@
  using namespace std;
 
  void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
-   ROS_INFO("TLP received scan data!");
-   tlpLaserScan = *scan;
+   int number = sizeof(scan->ranges);
+   ROS_INFO("Laser ranges: %i", number);
+   tlpLaserScan = scan;
 }
  //Default Constructor
  namespace tas_local_planner {
@@ -36,15 +37,15 @@
 
  bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     //ros::spinOnce();
-    geometry_msgs::Twist outCmd;
-    if(tlpLaserScan.ranges[320] > 0.5) {
+    if(tlpLaserScan->ranges[320] > 0.5) {
         cmd_vel.linear.x = 0.5;
     } else {
         cmd_vel.linear.x = 0;
     }
  }
  bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
-
+   plan_ = plan;
+   return true;
  }
  bool LocalPlanner::isGoalReached() {
    return goalIsReached_;
