@@ -35,6 +35,7 @@
  }
 
  bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
+    ros::spinOnce();
     int numberRanges = sizeof(tlpLaserScan.ranges);
     ROS_INFO("Compute velocity command! #ranges: %i", numberRanges);
  }
