@@ -6,11 +6,14 @@
  #include <angles/angles.h>
  #include <base_local_planner/world_model.h>
  #include <base_local_planner/costmap_model.h>
+ #include <sensor_msgs/LaserScan.h>
 
  using std::string;
 
  #ifndef TAS_LOCAL_PLANNER_CPP
  #define TAS_LOCAL_PLANNER_CPP
+
+sensor_msgs::LaserScan tlpLaserScan;
 
  namespace tas_local_planner {
 
@@ -28,10 +31,17 @@
   bool isGoalReached();
 
 private:
+
+  //variables
   bool goalIsReached_;
   bool initialized_;
   tf::TransformListener* tf_;
   costmap_2d::Costmap2DROS* costmap_ros_;
+  ros::NodeHandle nodeHandle_;
+  ros::Subscriber subScan_;
+
+  // functions
+  //void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
 
   };
 };
