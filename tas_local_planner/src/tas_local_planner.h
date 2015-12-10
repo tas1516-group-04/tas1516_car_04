@@ -40,6 +40,7 @@ private:
   ros::NodeHandle nodeHandle_;
   ros::Subscriber subScan_;
   std::vector<geometry_msgs::PoseStamped> plan_;
+  geometry_msgs::PoseStamped robotPose_;
 
   // functions
   //void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);

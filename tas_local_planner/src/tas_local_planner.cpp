@@ -1,58 +1,93 @@
 #include <pluginlib/class_list_macros.h>
 #include "tas_local_planner.h"
+#include <tf/transform_datatypes.h>
 
- //register this planner as a BaseGlobalPlanner plugin
- PLUGINLIB_EXPORT_CLASS(tas_local_planner::LocalPlanner, nav_core::BaseLocalPlanner)
+//register this planner as a BaseGlobalPlanner plugin
+PLUGINLIB_EXPORT_CLASS(tas_local_planner::LocalPlanner, nav_core::BaseLocalPlanner)
 
- using namespace std;
+using namespace std;
 
- void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
-   int number = sizeof(scan->ranges);
-   ROS_INFO("Laser ranges: %i", number);
-   tlpLaserScan = scan;
+void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
+    tlpLaserScan = scan;
 }
- //Default Constructor
- namespace tas_local_planner {
 
- LocalPlanner::LocalPlanner (){
- }
+float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b) {
+    float xDiff = a.pose.position.x - b.pose.position.x;
+    float yDiff = a.pose.position.y - b.pose.position.y;
+    return sqrt(pow(xDiff,2) + pow(yDiff,2));
+}
 
- LocalPlanner::LocalPlanner(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros){
-   initialize(name, tf, costmap_ros);
- }
+//Default Constructor
+namespace tas_local_planner {
 
- void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros){
-   if(!initialized_) {
-     subScan_ = nodeHandle_.subscribe("scan", 1000, scanCallback);
-     tf_ = tf;
-     costmap_ros_ = costmap_ros_;
-     goalIsReached_ = false;
+LocalPlanner::LocalPlanner (){
+}
 
-     //finish initialization
-     initialized_ = true;
-   } else {
-     ROS_INFO("TAS LocalPlanner is already initialized!");
-   }
- }
+LocalPlanner::LocalPlanner(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros){
+    initialize(name, tf, costmap_ros);
+}
 
- bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
-    //ros::spinOnce();
-    ROS_INFO("Range 320: %f", tlpLaserScan->ranges[320]);
-    if(tlpLaserScan->ranges[320] > 0.5) {
-        cmd_vel.linear.x = 0.5;
-	return true;
+void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros){
+    if(!initialized_) {
+        subScan_ = nodeHandle_.subscribe("scan", 1000, scanCallback);
+        tf_ = tf;
+        costmap_ros_ = costmap_ros_;
+        goalIsReached_ = false;
+
+        //finish initialization
+        ROS_INFO("TAS LocalPlanner succesfully initialized!");
+        initialized_ = true;
     } else {
-        cmd_vel.linear.x = 0;
-	return true;
+        ROS_INFO("TAS LocalPlanner is already initialized!");
     }
- }
- bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
-   plan_ = plan;
-   return true;
- }
- bool LocalPlanner::isGoalReached() {
-   return goalIsReached_;
- }
+}
+
+bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
+
+    //transform robot pose
+    tf::Stamped<tf::Pose> tempRobotPose;
+    costmap_ros_->getRobotPose(tempRobotPose);
+    tf::poseStampedTFToMsg(tempRobotPose, robotPose_);
+    //--
+
+    //calc which path point is closest to current robot pose
+    float lowestDist;
+    int counter = 1;
+    int nearestPathPoint = 0;
+    lowestDist = calcDistance(robotPose_, *(plan_.begin()));
+    for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin()+1; it != plan_.end(); ++it) {
+        if(calcDistance(robotPose_, *it) < lowestDist) {
+            nearestPathPoint = counter;
+            lowestDist = calcDistance(robotPose_, *it);
+        }
+        counter ++;
+    }
+    //--
+    ROS_INFO("Nearest path point: %i", nearestPathPoint);
+    ROS_INFO("Distance: %f", lowestDist);
 
 
- };
+    //ROS_INFO("Range 320: %f", tlpLaserScan->ranges[320]);
+
+    // emergency stop
+    bool stopCar = false;
+    for(int i = 0; i < 620; i++) { //620? passt des?
+        if(tlpLaserScan->ranges[i] < 0.1) {
+            stopCar = true;
+        }
+    }
+    if(stopCar) {
+        cmd_vel.linear.x = 0;
+        return true;
+    }
+}
+bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
+    plan_ = plan;
+    return true;
+}
+bool LocalPlanner::isGoalReached() {
+    return goalIsReached_;
+}
+
+
+};
