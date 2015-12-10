@@ -82,6 +82,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     }
 }
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
+    ROS_INFO("TLP: new global plan received!");
     plan_ = plan;
     return true;
 }
@@ -89,5 +90,39 @@ bool LocalPlanner::isGoalReached() {
     return goalIsReached_;
 }
 
+void LocalPlanner::analyzeLaserData()
+{
+    //transform to vector form
+    std::vector<geometry_msgs::Point> tmpLaserData;
+    for(int i = 0; i < 620; i++) { //620? passt des?
+        geometry_msgs::Point laserPoint;
+        laserPoint.x = sin(-1.4 + (2.8*i)/620)*tlpLaserScan->ranges[i];
+        laserPoint.y = cos(-1.4 + (2.8*i)/620)*tlpLaserScan->ranges[i];
+        tmpLaserData.push_back(laserPoint);
+    }
+    //calc direction
+    std::vector<geometry_msgs::Point> tmpLaserDirection;
+    for(std::vector<geometry_msgs::Point>::iterator it = tmpLaserData.begin()+1; it!=tmpLaserData.end(); it++) {
+        geometry_msgs::Point laserPointDirection;
+        laserPointDirection.x = it->x - (it-1)->x;
+        laserPointDirection.y = it->y - (it-1)->y;
+        tmpLaserDirection.push_back(laserPointDirection);
+    }
+
+    //retrieve objects
+    laserObjects_.clear();
+    LaserObject newObject;
+    newObject.start = *(tmpLaserData.begin());
+    int helper = 1;
+    for(std::vector<geometry_msgs::Point>::iterator it = tmpLaserDirection.begin()+1; it!=tmpLaserDirection.end(); it++) {
+        //if angle between two directions is greater than ? start new Object
+        if(atan2(it->x, it->y) - atan2((it-1)->x,(it-1)->y) > 10) {
+            newObject.end = tmpLaserData.at(helper);
+            laserObjects_.push_back(newObject);
+            newObject.start = tmpLaserData.at(helper);
+        }
+        helper ++;
+    }
+}
 
 };

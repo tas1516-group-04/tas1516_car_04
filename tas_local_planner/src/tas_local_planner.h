@@ -15,6 +15,17 @@
 
 sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
 
+enum LaserObjectType {
+    wall = 0,
+    obstacle = 1
+};
+
+struct LaserObject {
+    LaserObjectType type;
+    geometry_msgs::Point start;
+    geometry_msgs::Point end;
+};
+
  namespace tas_local_planner {
 
  class LocalPlanner : public nav_core::BaseLocalPlanner
@@ -41,10 +52,15 @@ private:
   ros::Subscriber subScan_;
   std::vector<geometry_msgs::PoseStamped> plan_;
   geometry_msgs::PoseStamped robotPose_;
+  std::vector<geometry_msgs::Point> laserDataTf_;
+  std::vector<LaserObject> laserObjects_;
+
 
   // functions
   //void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
+  int makeDecision();
+  void analyzeLaserData();
 
-  };
+ };
 };
 #endif
