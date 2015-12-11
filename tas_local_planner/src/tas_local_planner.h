@@ -22,8 +22,8 @@ enum LaserObjectType {
 
 struct LaserObject {
     LaserObjectType type;
-    geometry_msgs::Point start;
-    geometry_msgs::Point end;
+    int start;
+    int end;
 };
 
  namespace tas_local_planner {

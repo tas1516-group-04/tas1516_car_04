@@ -45,6 +45,9 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
 bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
     //transform robot pose
+    //ROS_INFO("TLP: computeVelocityCommands!");
+
+    /*
     tf::Stamped<tf::Pose> tempRobotPose;
     costmap_ros_->getRobotPose(tempRobotPose);
     tf::poseStampedTFToMsg(tempRobotPose, robotPose_);
@@ -65,7 +68,9 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     //--
     ROS_INFO("Nearest path point: %i", nearestPathPoint);
     ROS_INFO("Distance: %f", lowestDist);
+    */
 
+    analyzeLaserData();
 
     //ROS_INFO("Range 320: %f", tlpLaserScan->ranges[320]);
 
@@ -78,11 +83,16 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     }
     if(stopCar) {
         cmd_vel.linear.x = 0;
+        ROS_INFO("TLP: WARNING! Obstacle in front!");
+        return true;
+    } else {
+        cmd_vel.linear.x = 0.5;
         return true;
     }
 }
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
-    ROS_INFO("TLP: new global plan received!");
+    int gbpLength = plan.size();
+    ROS_INFO("TLP: new global plan received! length: %i", gbpLength);
     plan_ = plan;
     return true;
 }
@@ -112,17 +122,22 @@ void LocalPlanner::analyzeLaserData()
     //retrieve objects
     laserObjects_.clear();
     LaserObject newObject;
-    newObject.start = *(tmpLaserData.begin());
+    newObject.start = 1;
     int helper = 1;
     for(std::vector<geometry_msgs::Point>::iterator it = tmpLaserDirection.begin()+1; it!=tmpLaserDirection.end(); it++) {
         //if angle between two directions is greater than ? start new Object
-        if(atan2(it->x, it->y) - atan2((it-1)->x,(it-1)->y) > 10) {
-            newObject.end = tmpLaserData.at(helper);
-            laserObjects_.push_back(newObject);
-            newObject.start = tmpLaserData.at(helper);
+        if(abs(atan2(it->x, it->y) - atan2((it-1)->x,(it-1)->y)) < 1 || it == tmpLaserDirection.end()) {
+            newObject.end = helper;
+        } else {
+            if(newObject.end - newObject.start > 10) laserObjects_.push_back(newObject);
+            newObject.start = helper;
         }
+        //float angle = atan2(it->x, it->y) - atan2((it-1)->x,(it-1)->y);
+        //ROS_INFO("TLP: angle %i: %f", helper, angle);
         helper ++;
     }
+
+    ROS_INFO("TLP: %i laser objects detected!", (int) laserObjects_.size());
 }
 
 };
