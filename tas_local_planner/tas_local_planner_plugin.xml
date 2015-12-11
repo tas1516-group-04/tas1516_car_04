@@ -1,0 +1,5 @@
+<library path="lib/libtas_local_planner_lib">
+ <class name="tas_local_planner/LocalPlanner" type="tas_local_planner::LocalPlanner" base_class_type="nav_core::BaseLocalPlanner">
+   <description>This is a  local planner plugin for the TAS project.</description>
+ </class>
+</library>
