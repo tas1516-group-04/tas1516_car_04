@@ -3,7 +3,7 @@
 <launch>
   <master auto="start"/>
   <param name="/use_sim_time" value="false"/>
-  
+
   <!-- Run map server  -->
   <node name="map_server" pkg="map_server" type="map_server" args="$(find tas)/launch/config/map_server/LSR_3.yaml"/>
 
@@ -69,11 +69,13 @@
 
   <!-- Original Move Base-->
   <node pkg="move_base" type="move_base" respawn="false" name="move_base_node" output="screen">
+    <param name="base_local_planner" value="tas_local_planner/LocalPlanner"/>
     <rosparam file="$(find tas)/launch/config/move_base/costmap_common_params.yaml" command="load" ns="global_costmap" />
     <rosparam file="$(find tas)/launch/config/move_base/costmap_common_params.yaml" command="load" ns="local_costmap" />
     <rosparam file="$(find tas)/launch/config/move_base/local_costmap_params.yaml" command="load" />
     <rosparam file="$(find tas)/launch/config/move_base/global_costmap_params.yaml" command="load" />
-    <rosparam file="$(find tas)/launch/config/move_base/base_local_planner_params.yaml" command="load" />
+    <!--<rosparam file="$(find tas)/launch/config/move_base/base_local_planner_params.yaml" command="load" />-->
+    <param name="planner_frequency" value="1.0"/>
   </node>
 
   <!-- Run trajectory control -->

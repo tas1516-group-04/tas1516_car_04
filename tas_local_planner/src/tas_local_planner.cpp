@@ -50,6 +50,14 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
     analyzeLaserData();
 
+    float angleParameter = 1;
+    if(globalPlanIsSet_) {
+        getClosestPathPoint(); //to transfrom robot pose !
+        geometry_msgs::Vector3 angularVec;
+        float angularFloat = (asin(robotPose_.pose.orientation.w) - asin(plan_[0].pose.orientation.w)) * (2*angleParameter);
+        angularVec.x = cos(angularFloat);
+        angularVec.y = sin(angularFloat);
+    }
     //ROS_INFO("Range 320: %f", tlpLaserScan->ranges[320]);
 
     // emergency stop
@@ -64,7 +72,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         ROS_INFO("TLP: WARNING! Obstacle in front!");
         return true;
     } else {
-        cmd_vel.linear.x = 0;
+        cmd_vel.linear.x = 0.2;
         return true;
     }
 }
@@ -97,8 +105,6 @@ void LocalPlanner::analyzeLaserData()
         float theta = atan2((it+1)->position.x-it->position.x, (it+1)->position.y-it->position.y) - M_PI/2;
         it->orientation.w = sin(theta/2);
         it->orientation.z = cos(theta/2);
-        //it->orientation.w = atan2(it->position.x-(it-1)->position.x, it->position.y-(it-1)->position.y);
-        //it->orientation.z = sqrt(pow(it->position.x - (it-1)->position.x, 2)+pow(it->position.y - (it-1)->position.y,2));
     }
 
     laserObjects_.clear();
@@ -129,30 +135,6 @@ void LocalPlanner::analyzeLaserData()
     //ROS_INFO("TLP: publish laserDataTf_ with size: %i", (int) poseArray.poses.size());
     //ROS_INFO("TLP: %i laser objects detected!", (int) laserObjects_.size());
     pubTest_.publish(poseArray);
-
-    //retrieve objects
-    /*
-    laserObjects_.clear();
-    LaserObject newObject;
-    newObject.start = 0;
-    int helper = 1;    
-    for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin()+1; it!=laserDataTf_.end(); it++) {
-        //if angle between two directions is greater than ? start new Object
-        if(abs(atan2(it->orientation.x, it->orientation.y)
-               - atan2((it-1)->orientation.x,(it-1)->orientation.y)) < 1 || it == laserDataTf_.end()) {
-            newObject.end = helper;
-        } else {
-            // only add object if it is big enough
-            if(newObject.end - newObject.start > 10) laserObjects_.push_back(newObject);
-            newObject.start = helper;
-        }
-        //float angle = atan2(it->x, it->y) - atan2((it-1)->x,(it-1)->y);
-        //ROS_INFO("TLP: angle %i: %f", helper, angle);
-        helper ++;
-    }
-
-    ROS_INFO("TLP: %i laser objects detected!", (int) laserObjects_.size());
-    */
 }
 
 int LocalPlanner::getClosestPathPoint()
