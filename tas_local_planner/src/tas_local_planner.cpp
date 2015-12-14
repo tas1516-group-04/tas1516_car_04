@@ -52,10 +52,16 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
     //calc angular component of cmd_vel
     if(globalPlanIsSet_) {
-        tfRobotPose(); //to transfrom robot pose !
-        cmd_vel.angular.x = plan_[5].pose.position.x - robotPose_.pose.position.x;
-        cmd_vel.angular.y = plan_[5].pose.position.y - robotPose_.pose.position.y;
-       // costmap Global Frame ID = odom;
+         // costmap Global Frame ID = odom
+        tf::StampedTransform transform;
+        tf::Stamped<tf::Pose> tempRobotPose;
+        costmap_ros_->getRobotPose(tempRobotPose);
+        tf_->lookupTransform("map","odom", ros::Time(0), transform);
+        tf::poseStampedTFToMsg(tempRobotPose, robotPose_);
+        cmd_vel.angular.x = plan_[5].pose.position.x - robotPose_.pose.position.x - transform.getOrigin().x();
+        cmd_vel.angular.y = plan_[5].pose.position.y - robotPose_.pose.position.y - transform.getOrigin().y();
+        ROS_INFO("Costmap Global Frame: %s", costmap_ros_->getGlobalFrameID().c_str());
+>>>>>>> cf90c0f7c18a90d0cef2f5994bec30b465966684
     }
 
     // emergency stop
@@ -136,10 +142,6 @@ void LocalPlanner::analyzeLaserData()
 
 void LocalPlanner::tfRobotPose()
 {
-    //transform RobotPose
-    tf::Stamped<tf::Pose> tempRobotPose;
-    costmap_ros_->getRobotPose(tempRobotPose);
-    tf::poseStampedTFToMsg(tempRobotPose, robotPose_);
 }
 
 };
