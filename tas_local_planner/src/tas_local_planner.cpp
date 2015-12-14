@@ -53,12 +53,12 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     //calc angular component of cmd_vel
     float angleParameter = 1;
     if(globalPlanIsSet_) {
-        tfRobotPose(); //to transfrom robot pose !
+        // tfRobotPose(); //to transfrom robot pose !
         geometry_msgs::Vector3 angularVec;
-        float angularFloat = (2*asin(robotPose_.pose.orientation.w) - 2*asin(plan_[0].pose.orientation.w)) * (angleParameter);
-        angularVec.x = cos(angularFloat/2);
-        angularVec.y = sin(angularFloat/2);
-        ROS_INFO("Costmap Global Frame: %s", costmap_ros_->getGlobalFrameID().c_str());
+        //float angularFloat = (2*asin(robotPose_.pose.orientation.w) - 2*asin(plan_[0].pose.orientation.w)) * (angleParameter);
+        //angularVec.x = cos(angularFloat/2);
+        //angularVec.y = sin(angularFloat/2);
+       // ROS_INFO("Costmap Global Frame: %s", costmap_ros_->getGlobalFrameID().c_str());
     }
 
     // emergency stop
