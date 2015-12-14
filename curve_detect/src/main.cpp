@@ -13,7 +13,7 @@ void planReceivedCallback(const nav_msgs::Path::ConstPtr& path)
   if (logfile.is_open())
   {
 
-    logfile << "Timestamp: " << path->header.stamp << endl;
+    logfile << "Timestamp: " << path->header.stamp << "\n" << endl;
     for (geometry_msgs::PoseStamped point : path->poses)
     {
         logfile << point.pose.position.x << ","
