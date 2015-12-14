@@ -55,7 +55,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         tfRobotPose(); //to transfrom robot pose !
         cmd_vel.angular.x = plan_[5].pose.position.x - robotPose_.pose.position.x;
         cmd_vel.angular.y = plan_[5].pose.position.y - robotPose_.pose.position.y;
-        ROS_INFO("Costmap Global Frame: %s", costmap_ros_->getGlobalFrameID().c_str());
+       // costmap Global Frame ID = odom;
     }
 
     // emergency stop
