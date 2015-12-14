@@ -57,6 +57,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         float angularFloat = (asin(robotPose_.pose.orientation.w) - asin(plan_[0].pose.orientation.w)) * (2*angleParameter);
         angularVec.x = cos(angularFloat);
         angularVec.y = sin(angularFloat);
+        ROS_INFO("Costmap Global Frame: %s", costmap_ros_->getGlobalFrameID().c_str());
     }
     //ROS_INFO("Range 320: %f", tlpLaserScan->ranges[320]);
 
