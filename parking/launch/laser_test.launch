@@ -1,0 +1,10 @@
+<launch>
+
+<node pkg="rosbag" type="play" name="player" output="screen" args="--clock /home/tomelloso/catkin_ws/src/tas1516_car_04/parking/data/laser_scan_test.bag /base_scan:=/scan"/>
+<!-- remap from="base_scan" to="scan"/-->
+<!-- remap from="" to="hello"/-->
+
+  <!-- Run rviz -->
+  <node name="rviz" pkg="rviz" type="rviz" args="" />
+
+</launch>
