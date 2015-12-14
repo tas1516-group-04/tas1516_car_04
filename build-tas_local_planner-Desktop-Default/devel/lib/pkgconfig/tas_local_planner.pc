@@ -1,8 +1,0 @@
-prefix=/home/sebastian/catkin_ws/src/tas_car/build-tas_local_planner-Desktop-Default/devel
-
-Name: tas_local_planner
-Description: Description of tas_local_planner
-Version: 0.0.0
-Cflags: 
-Libs: -L/home/sebastian/catkin_ws/src/tas_car/build-tas_local_planner-Desktop-Default/devel/lib 
-Requires: 
