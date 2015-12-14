@@ -35,7 +35,7 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         subScan_ = nodeHandle_.subscribe("scan", 1000, scanCallback);
         pubTest_ = nodeHandle_.advertise<geometry_msgs::PoseArray>("test",1000);
         tf_ = tf;
-        costmap_ros_ = costmap_ros_;
+        costmap_ros_ = costmap_ros;
         goalIsReached_ = false;
 
         //finish initialization
@@ -51,14 +51,11 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     analyzeLaserData();
 
     //calc angular component of cmd_vel
-    float angleParameter = 1;
     if(globalPlanIsSet_) {
-        // tfRobotPose(); //to transfrom robot pose !
-        geometry_msgs::Vector3 angularVec;
-        //float angularFloat = (2*asin(robotPose_.pose.orientation.w) - 2*asin(plan_[0].pose.orientation.w)) * (angleParameter);
-        //angularVec.x = cos(angularFloat/2);
-        //angularVec.y = sin(angularFloat/2);
-       // ROS_INFO("Costmap Global Frame: %s", costmap_ros_->getGlobalFrameID().c_str());
+        tfRobotPose(); //to transfrom robot pose !
+        cmd_vel.angular.x = plan_[5].pose.position.x - robotPose_.pose.position.x;
+        cmd_vel.angular.y = plan_[5].pose.position.y - robotPose_.pose.position.y;
+        ROS_INFO("Costmap Global Frame: %s", costmap_ros_->getGlobalFrameID().c_str());
     }
 
     // emergency stop
