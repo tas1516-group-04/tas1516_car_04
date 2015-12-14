@@ -58,9 +58,12 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         costmap_ros_->getRobotPose(tempRobotPose);
         tf_->lookupTransform("map","odom", ros::Time(0), transform);
         tf::poseStampedTFToMsg(tempRobotPose, robotPose_);
-        cmd_vel.angular.x = plan_[5].pose.position.x - robotPose_.pose.position.x - transform.getOrigin().x();
-        cmd_vel.angular.y = plan_[5].pose.position.y - robotPose_.pose.position.y - transform.getOrigin().y();
-       // ROS_INFO("Costmap Global Frame: %s", costmap_ros_->getGlobalFrameID().c_str());
+        double x;
+        double y;
+        x = plan_[5].pose.position.x - robotPose_.pose.position.x - transform.getOrigin().x();
+        y = plan_[5].pose.position.y - robotPose_.pose.position.y - transform.getOrigin().y();
+        cmd_vel.angular.z = atan2(x,y);        
+// ROS_INFO("Costmap Global Frame: %s", costmap_ros_->getGlobalFrameID().c_str());
     }
 
     // emergency stop
