@@ -50,16 +50,16 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
     analyzeLaserData();
 
+    //calc angular component of cmd_vel
     float angleParameter = 1;
     if(globalPlanIsSet_) {
-        getClosestPathPoint(); //to transfrom robot pose !
+        tfRobotPose(); //to transfrom robot pose !
         geometry_msgs::Vector3 angularVec;
-        float angularFloat = (asin(robotPose_.pose.orientation.w) - asin(plan_[0].pose.orientation.w)) * (2*angleParameter);
-        angularVec.x = cos(angularFloat);
-        angularVec.y = sin(angularFloat);
+        float angularFloat = (2*asin(robotPose_.pose.orientation.w) - 2*asin(plan_[0].pose.orientation.w)) * (angleParameter);
+        angularVec.x = cos(angularFloat/2);
+        angularVec.y = sin(angularFloat/2);
         ROS_INFO("Costmap Global Frame: %s", costmap_ros_->getGlobalFrameID().c_str());
     }
-    //ROS_INFO("Range 320: %f", tlpLaserScan->ranges[320]);
 
     // emergency stop
     bool stopCar = false;
@@ -81,7 +81,6 @@ bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) 
     ROS_INFO("TLP: new global plan received! length: %i", (int) plan.size());
     globalPlanIsSet_ = true;
     plan_ = plan;
-    return true;
 }
 bool LocalPlanner::isGoalReached() {
     return goalIsReached_;
@@ -138,28 +137,12 @@ void LocalPlanner::analyzeLaserData()
     pubTest_.publish(poseArray);
 }
 
-int LocalPlanner::getClosestPathPoint()
+void LocalPlanner::tfRobotPose()
 {
     //transform RobotPose
     tf::Stamped<tf::Pose> tempRobotPose;
     costmap_ros_->getRobotPose(tempRobotPose);
     tf::poseStampedTFToMsg(tempRobotPose, robotPose_);
-    //--
-
-    //calc which path point is closest to current robot pose
-    float lowestDist;
-    int counter = 1;
-    int nearestPathPoint = 0;
-    lowestDist = calcDistance(robotPose_, *(plan_.begin()));
-    for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin()+1; it != plan_.end(); ++it) {
-        if(calcDistance(robotPose_, *it) < lowestDist) {
-            nearestPathPoint = counter;
-            lowestDist = calcDistance(robotPose_, *it);
-        }
-        counter ++;
-    }
-    //--
-    return nearestPathPoint;
 }
 
 };
