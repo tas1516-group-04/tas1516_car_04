@@ -55,11 +55,15 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
          // costmap Global Frame ID = odom
         tf::StampedTransform transform;
         tf::Stamped<tf::Pose> tempRobotPose;
-        costmap_ros_->getRobotPose(tempRobotPose);
-        tf_->lookupTransform("map","odom", ros::Time(0), transform);
+        costmap_ros_->getRobotPose(tempRobotPose); //frame id = odom
+        tempRobotPose.setOrigin(transform.getOrigin());
+        tempRobotPose.setRotation(transform.getRotation());
         tf::poseStampedTFToMsg(tempRobotPose, robotPose_);
-        double x = plan_[5].pose.position.x - robotPose_.pose.position.x - transform.getOrigin().x();
-        double y = plan_[5].pose.position.y - robotPose_.pose.position.y - transform.getOrigin().y();
+        ROS_INFO("Robot x pos: %f", robotPose_.pose.position.x);
+        ROS_INFO("Robot y pos: %f", robotPose_.pose.position.y);
+        tf_->lookupTransform("map","odom", ros::Time(0), transform);
+        double x = plan_[5].pose.position.x - robotPose_.pose.position.x;
+        double y = plan_[5].pose.position.y - robotPose_.pose.position.y;
         double alpha = acos(robotPose_.pose.orientation.z)*2;
         double beta =  atan2(x,y) - M_PI/2;
         cmd_vel.angular.z = beta - alpha;
