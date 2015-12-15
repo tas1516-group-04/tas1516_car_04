@@ -14,10 +14,18 @@ void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
     // ROS_INFO("Angle increment: %f", (float) scan->angle_increment);
 }
 
+// distance between two PoseStamped poses
 float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b) {
     float xDiff = a.pose.position.x - b.pose.position.x;
     float yDiff = a.pose.position.y - b.pose.position.y;
     return sqrt(pow(xDiff,2) + pow(yDiff,2));
+}
+
+float calcAngle(float x, float y) {
+    // radius from wheelbase and steerAngle
+    //float radius = WHEELBASE / tan(steerAngle);
+    float radius = abs((pow(x,2)+pow(y,2))/(2*y));
+    return atan(WHEELBASE/radius);
 }
 
 //Default Constructor
@@ -52,26 +60,36 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
     //calc angular component of cmd_vel
     if(globalPlanIsSet_) {
-         // costmap Global Frame ID = odom
-        tf::StampedTransform transform;
+        // costmap Global Frame ID = odom
+        // transform robot pose to geometry_msgs::Stamped
         tf::Stamped<tf::Pose> tempRobotPose;
         costmap_ros_->getRobotPose(tempRobotPose); //frame id = odom
-        tempRobotPose.setOrigin(transform.getOrigin());
-        tempRobotPose.setRotation(transform.getRotation());
         tf::poseStampedTFToMsg(tempRobotPose, robotPose_);
-        ROS_INFO("Robot x pos: %f", robotPose_.pose.position.x);
-        ROS_INFO("Robot y pos: %f", robotPose_.pose.position.y);
-        tf_->lookupTransform("map","odom", ros::Time(0), transform);
-        double x = plan_[5].pose.position.x - robotPose_.pose.position.x;
-        double y = plan_[5].pose.position.y - robotPose_.pose.position.y;
-        double alpha = acos(robotPose_.pose.orientation.z)*2;
-        double beta =  atan2(x,y) - M_PI/2;
-        cmd_vel.angular.z = beta - alpha;
+
+        // transform global plan to odom frame
+        // TODO: check if transformation is working!
+        tf::StampedTransform transform;
+        tf_->lookupTransform("odom","map", ros::Time(0),transform);
+        for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin(); it != plan_.end(); it++) {
+            tf::Stamped<tf::Pose> poseTf;
+            tf::poseStampedMsgToTF(*it,poseTf);
+            poseTf.setOrigin(transform.getOrigin());
+            poseTf.setRotation(transform.getRotation());
+            tf::poseStampedTFToMsg(tempRobotPose, *it);
+        }
+        // plan_ now in frame odom
+
+        // calc steerAngle from trajectorie
+        // TODO: which point from plan? depending on distance?
+        float steerAngle = calcAngle(plan_[5].pose.position.x,plan_[5].pose.position.y);
+        if(plan_[5].pose.position.y < 0) steerAngle = steerAngle * (-1);
+        cmd_vel.angular.z = steerAngle;
     }
 
     // emergency stop
     bool stopCar = false;
-    for(int i = 0; i < 640; i++) { //620? passt des?
+    for(int i = 0; i < 640; i++) {
+        //if one front laser scan distance < 0.5 turn off the engine
         if(tlpLaserScan->ranges[i] < 0.5) {
             stopCar = true;
         }
@@ -81,9 +99,11 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         ROS_INFO("TLP: WARNING! Obstacle in front!");
         return true;
     } else {
-        cmd_vel.linear.x = 0.2;
+        //cmd_vel.linear.x = 1.1 - (cmd_vel.angular.z*M_PI)/4;
+        cmd_vel.linear.x =0.1;
         return true;
     }
+    // ---
 }
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
     ROS_INFO("TLP: new global plan received! length: %i", (int) plan.size());

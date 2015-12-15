@@ -14,6 +14,9 @@
  #ifndef TAS_LOCAL_PLANNER_CPP
  #define TAS_LOCAL_PLANNER_CPP
 
+// distance between the front and back wheels
+#define WHEELBASE 1
+
 sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
 
 enum LaserObjectType {
