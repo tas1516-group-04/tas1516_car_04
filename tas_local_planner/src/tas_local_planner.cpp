@@ -60,6 +60,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
     //calc angular component of cmd_vel
     if(globalPlanIsSet_) {
+
         // costmap Global Frame ID = odom
         // transform robot pose to geometry_msgs::Stamped
         tf::Stamped<tf::Pose> tempRobotPose;
