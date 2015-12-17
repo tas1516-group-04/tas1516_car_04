@@ -14,10 +14,19 @@ void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
     // ROS_INFO("Angle increment: %f", (float) scan->angle_increment);
 }
 
+// distance between two PoseStamped poses
 float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b) {
     float xDiff = a.pose.position.x - b.pose.position.x;
     float yDiff = a.pose.position.y - b.pose.position.y;
     return sqrt(pow(xDiff,2) + pow(yDiff,2));
+}
+
+float calcAngle(float x, float y) {
+    // radius from wheelbase and steerAngle
+    //float radius = WHEELBASE / tan(steerAngle);
+    if(y == 0) return 0;
+    float radius = abs((pow(x,2)+pow(y,2))/(2*y));
+    return atan(WHEELBASE/radius);
 }
 
 //Default Constructor
@@ -35,8 +44,11 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         subScan_ = nodeHandle_.subscribe("scan", 1000, scanCallback);
         pubTest_ = nodeHandle_.advertise<geometry_msgs::PoseArray>("test",1000);
         tf_ = tf;
-        costmap_ros_ = costmap_ros_;
+        costmap_ros_ = costmap_ros;
         goalIsReached_ = false;
+
+        //debug file
+        debugFile_.open("debug.txt");
 
         //finish initialization
         ROS_INFO("TAS LocalPlanner succesfully initialized!");
@@ -50,12 +62,55 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
     analyzeLaserData();
 
-    //ROS_INFO("Range 320: %f", tlpLaserScan->ranges[320]);
+    //calc angular component of cmd_vel
+    if(globalPlanIsSet_) {
+
+        // costmap Global Frame ID = odom
+        // transform robot pose to geometry_msgs::Stamped
+        /*
+        tf::Stamped<tf::Pose> tempRobotPose;
+        costmap_ros_->getRobotPose(tempRobotPose); //frame id = odom
+        tf::poseStampedTFToMsg(tempRobotPose, robotPose_);
+        */
+
+        // transform global plan to odom frame
+        // TODO: check if transformation is working!
+        // ROS_INFO("gbl map frame id: %s", plan_.at(0).header.frame_id.c_str());
+        //tf::StampedTransform transform;
+        //tf_->lookupTransform("laser","map", ros::Time(0),transform);
+        for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin(); it != plan_.end(); it++) {
+            tf_->waitForTransform("laser", "map", it->header.stamp, ros::Duration(3.0));
+            tf_->transformPose("laser", *it, *it);
+            //tf_->transformPose("base_link", *it, *it);
+            //tf_->transformPose("laser", *it, *it);
+        }
+        // plan_ now in frame laser
+
+        /// calc steerAngle from trajectorie
+        // TODO: which point from plan? depending on distance?
+        int point = 40; // which point first? distance?
+        ROS_INFO("Distance: %f", calcDistance(plan_[0], plan_[1]));
+        // +/- M_PI/2? check!
+        while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.25){
+            point ++;
+        }
+        // debug
+        ROS_INFO("TLP: Point [%i]  x: %f y: %f z: %f w: %f",
+                 point,
+                 (float) plan_[point].pose.position.x,
+                 (float) plan_[point].pose.position.y,
+                 (float) plan_[point].pose.orientation.z,
+                 (float) plan_[point].pose.orientation.w);
+        float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
+        if(plan_[point].pose.position.y < 0) steerAngle = steerAngle * (-1);
+        cmd_vel.angular.z = steerAngle;
+    }
 
     // emergency stop
     bool stopCar = false;
-    for(int i = 0; i < 640; i++) { //620? passt des?
-        if(tlpLaserScan->ranges[i] < 0.5) {
+    for(int i = 0; i < 640; i++) {
+        //if one front laser scan distance < 0.5 turn off the engine
+        if(tlpLaserScan->ranges[i] < 0.0) {
             stopCar = true;
         }
     }
@@ -64,15 +119,16 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         ROS_INFO("TLP: WARNING! Obstacle in front!");
         return true;
     } else {
-        cmd_vel.linear.x = 0;
+        //cmd_vel.linear.x = 1.1 - (cmd_vel.angular.z*M_PI)/4;
+        cmd_vel.linear.x =0.2;
         return true;
     }
+    // ---
 }
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
     ROS_INFO("TLP: new global plan received! length: %i", (int) plan.size());
     globalPlanIsSet_ = true;
     plan_ = plan;
-    return true;
 }
 bool LocalPlanner::isGoalReached() {
     return goalIsReached_;
@@ -85,7 +141,7 @@ void LocalPlanner::analyzeLaserData()
     int numberLaserPoints = (int) ( (abs(tlpLaserScan->angle_min) + abs(tlpLaserScan->angle_max))/tlpLaserScan->angle_increment);
     for(int i = 0; i < numberLaserPoints; i++) {
         //max distance
-        if(tlpLaserScan->ranges[i] < 2) {
+        if(tlpLaserScan->ranges[i] < 100) {
             geometry_msgs::Pose newLaserPoint;
             newLaserPoint.position.x = cos(tlpLaserScan->angle_min + tlpLaserScan->angle_increment*i)*tlpLaserScan->ranges[i];
             newLaserPoint.position.y = sin(tlpLaserScan->angle_min + tlpLaserScan->angle_increment*i)*tlpLaserScan->ranges[i];
@@ -97,8 +153,6 @@ void LocalPlanner::analyzeLaserData()
         float theta = atan2((it+1)->position.x-it->position.x, (it+1)->position.y-it->position.y) - M_PI/2;
         it->orientation.w = sin(theta/2);
         it->orientation.z = cos(theta/2);
-        //it->orientation.w = atan2(it->position.x-(it-1)->position.x, it->position.y-(it-1)->position.y);
-        //it->orientation.z = sqrt(pow(it->position.x - (it-1)->position.x, 2)+pow(it->position.y - (it-1)->position.y,2));
     }
 
     laserObjects_.clear();
@@ -127,56 +181,12 @@ void LocalPlanner::analyzeLaserData()
     poseArray.header.frame_id = "laser";
     poseArray.poses = laserDataTf_;
     //ROS_INFO("TLP: publish laserDataTf_ with size: %i", (int) poseArray.poses.size());
-    ROS_INFO("TLP: %i laser objects detected!", (int) laserObjects_.size());
+    //ROS_INFO("TLP: %i laser objects detected!", (int) laserObjects_.size());
     pubTest_.publish(poseArray);
-
-    //retrieve objects
-    /*
-    laserObjects_.clear();
-    LaserObject newObject;
-    newObject.start = 0;
-    int helper = 1;    
-    for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin()+1; it!=laserDataTf_.end(); it++) {
-        //if angle between two directions is greater than ? start new Object
-        if(abs(atan2(it->orientation.x, it->orientation.y)
-               - atan2((it-1)->orientation.x,(it-1)->orientation.y)) < 1 || it == laserDataTf_.end()) {
-            newObject.end = helper;
-        } else {
-            // only add object if it is big enough
-            if(newObject.end - newObject.start > 10) laserObjects_.push_back(newObject);
-            newObject.start = helper;
-        }
-        //float angle = atan2(it->x, it->y) - atan2((it-1)->x,(it-1)->y);
-        //ROS_INFO("TLP: angle %i: %f", helper, angle);
-        helper ++;
-    }
-
-    ROS_INFO("TLP: %i laser objects detected!", (int) laserObjects_.size());
-    */
 }
 
-int LocalPlanner::getClosestPathPoint()
+void LocalPlanner::tfRobotPose()
 {
-    //transform RobotPose
-    tf::Stamped<tf::Pose> tempRobotPose;
-    costmap_ros_->getRobotPose(tempRobotPose);
-    tf::poseStampedTFToMsg(tempRobotPose, robotPose_);
-    //--
-
-    //calc which path point is closest to current robot pose
-    float lowestDist;
-    int counter = 1;
-    int nearestPathPoint = 0;
-    lowestDist = calcDistance(robotPose_, *(plan_.begin()));
-    for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin()+1; it != plan_.end(); ++it) {
-        if(calcDistance(robotPose_, *it) < lowestDist) {
-            nearestPathPoint = counter;
-            lowestDist = calcDistance(robotPose_, *it);
-        }
-        counter ++;
-    }
-    //--
-    return nearestPathPoint;
 }
 
 };
