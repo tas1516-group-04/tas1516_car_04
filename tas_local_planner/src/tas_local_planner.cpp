@@ -63,8 +63,8 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     analyzeLaserData();
 
     //calc angular component of cmd_vel
-    if(globalPlanIsSet_) {
-
+    if(globalPlanIsSet_ && plan_.size() > 45) {
+        goalIsReached_ = false;
         // costmap Global Frame ID = odom
         // transform robot pose to geometry_msgs::Stamped
         /*
@@ -81,17 +81,15 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin(); it != plan_.end(); it++) {
             tf_->waitForTransform("laser", "map", it->header.stamp, ros::Duration(3.0));
             tf_->transformPose("laser", *it, *it);
-            //tf_->transformPose("base_link", *it, *it);
-            //tf_->transformPose("laser", *it, *it);
         }
         // plan_ now in frame laser
 
         /// calc steerAngle from trajectorie
         // TODO: which point from plan? depending on distance?
-        int point = 40; // which point first? distance?
+        int point = 30; // which point first? distance?
         ROS_INFO("Distance: %f", calcDistance(plan_[0], plan_[1]));
         // +/- M_PI/2? check!
-        while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.25){
+        while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.3){
             point ++;
         }
         // debug
@@ -104,6 +102,9 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
         if(plan_[point].pose.position.y < 0) steerAngle = steerAngle * (-1);
         cmd_vel.angular.z = steerAngle;
+    } else if(globalPlanIsSet_) {
+        goalIsReached_ = true;
+        return false;
     }
 
     // emergency stop

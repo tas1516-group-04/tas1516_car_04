@@ -17,7 +17,7 @@ using std::string;
 #define TAS_LOCAL_PLANNER_CPP
 
 // distance between the front and back wheels
-#define WHEELBASE 1
+#define WHEELBASE 0.35
 
 sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
 
