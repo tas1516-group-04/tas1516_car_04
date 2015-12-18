@@ -39,7 +39,7 @@ bool checkForObject(float r, float x, float y) {
             return false;
         }
     } else {
-        if(pow(x,2) + pow(y+r-CARWIDTH/2,2) - pow(r,2) < 0 && pow(x,2) + pow(y+r+CARWIDTH/2,2) - pow(r,2) > 0) {
+        if(pow(x,2) + pow(y-r-CARWIDTH/2,2) - pow(r,2) < 0 && pow(x,2) + pow(y-r+CARWIDTH/2,2) - pow(r,2) > 0) {
             // return true if object in path
             return true;
         } else {
@@ -140,19 +140,19 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 bool objectLeft = true;
                 bool objectRight = true;
 
-                float leftRadius =  radius + helper*0.1;
-                float rightRadius = radius - helper*0.1;
+                float radiusInc =  radius + helper*0.1;
+                float radiusDec =  radius - helper*0.1;
                 for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
-                    objectLeft = checkForObject(leftRadius, it->position.x, it->position.y);
-                    objectRight = checkForObject(rightRadius, it->position.x, it->position.y);
+                    objectLeft  = checkForObject(radiusInc, it->position.x, it->position.y);
+                    objectRight = checkForObject(radiusDec, it->position.x, it->position.y);
                 }
                 if(!objectLeft) {
-                    cmd_vel.angular.z = atan(WHEELBASE/leftRadius);
+                    cmd_vel.angular.z = atan(WHEELBASE/radiusInc);
                     ROS_INFO("TLP: Alternative right turn!");
                     return false;
                 }
                 if(!objectRight) {
-                    cmd_vel.angular.z = atan(WHEELBASE/rightRadius);
+                    cmd_vel.angular.z = atan(WHEELBASE/radiusDec);
                     ROS_INFO("TLP: Alternative left turn!");
                     return false;
                 }
