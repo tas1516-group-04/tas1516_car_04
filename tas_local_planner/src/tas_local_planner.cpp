@@ -21,12 +21,22 @@ float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b)
     return sqrt(pow(xDiff,2) + pow(yDiff,2));
 }
 
-float calcAngle(float x, float y) {
+float calcAngle(float x, float y, float &radiusOut) {
     // radius from wheelbase and steerAngle
     //float radius = WHEELBASE / tan(steerAngle);
     if(y == 0) return 0;
-    float radius = abs((pow(x,2)+pow(y,2))/(2*y));
-    return atan(WHEELBASE/radius);
+    radiusOut = abs((pow(x,2)+pow(y,2))/(2*y));
+    return atan(WHEELBASE/radiusOut);
+}
+
+bool checkForObject(float r, float x, float y) {
+    if(pow(x,2) + pow(y-r-CARWIDTH/2,2) - pow(r,2) > 0 || pow(x,2) + pow(y-r+CARWIDTH/2,2) > 0) {
+        // return true if object in path
+        return true;
+    } else {
+        // return false otherwise
+        return false;
+    }
 }
 
 //Default Constructor
@@ -98,12 +108,56 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                  (float) plan_[point].pose.position.y,
                  (float) plan_[point].pose.orientation.z,
                  (float) plan_[point].pose.orientation.w);
-        float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
-        if(plan_[point].pose.position.y < 0) steerAngle = steerAngle * (-1);
-        cmd_vel.angular.z = steerAngle*0.6;
+
+        //calc steering angle
+        float radius;
+        float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y, radius);
+        if(plan_[point].pose.position.y < 0) {
+            steerAngle = steerAngle * (-1);
+            radius = radius * (-1);
+        }
+        // obstacle avoidance
+        bool objectInPath = false;
+        for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
+            objectInPath = checkForObject(radius, it->position.x, it->position.y);
+        }
+        // search for avoidance path
+        if(objectInPath) {
+            ROS_INFO("TLP: Object in Path!");
+            int helper = 1;
+            while(true) {
+                bool objectLeft = true;
+                bool objectRight = true;
+
+                float leftRadius =  radius + helper*0.1;
+                float rightRadius = radius - helper*0.1;
+                for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
+                    objectLeft = checkForObject(leftRadius, it->position.x, it->position.y);
+                    objectRight = checkForObject(rightRadius, it->position.x, it->position.y);
+                }
+                if(!objectLeft) {
+                    cmd_vel.angular.z = atan(WHEELBASE/leftRadius);
+                    ROS_INFO("TLP: Alternative right turn!");
+                    return false;
+                }
+                if(!objectRight) {
+                    cmd_vel.angular.z = atan(WHEELBASE/rightRadius);
+                    ROS_INFO("TLP: Alternative left turn!");
+                    return false;
+                }
+                if(helper == 100) {
+                    ROS_INFO("TLP: No alternative path found!");
+                    return false;
+                }
+                helper++;
+            }
+        } else {
+            cmd_vel.angular.z = steerAngle*0.6;
+        }
     }
     // emergency stop
     bool stopCar = false;
+    return true;
     for(int i = 0; i < 640; i++) {
         //if one front laser scan distance < 0.5 turn off the engine
         if(tlpLaserScan->ranges[i] < 0.0) {
@@ -117,7 +171,6 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     } else {
         //cmd_vel.linear.x = 1.1 - (cmd_vel.angular.z*M_PI)/4;
         cmd_vel.linear.x =0.2;
-        return true;
     }
     // ---
 }
@@ -140,15 +193,17 @@ void LocalPlanner::analyzeLaserData()
     //transform to vector form
     laserDataTf_.clear();
     int numberLaserPoints = (int) ( (abs(tlpLaserScan->angle_min) + abs(tlpLaserScan->angle_max))/tlpLaserScan->angle_increment);
-    for(int i = 0; i < numberLaserPoints; i++) {
+    for(int i = 200; i < numberLaserPoints-200; i++) {
         //max distance
-        if(tlpLaserScan->ranges[i] < 100) {
+        if(tlpLaserScan->ranges[i] < 1.5) {
             geometry_msgs::Pose newLaserPoint;
             newLaserPoint.position.x = cos(tlpLaserScan->angle_min + tlpLaserScan->angle_increment*i)*tlpLaserScan->ranges[i];
             newLaserPoint.position.y = sin(tlpLaserScan->angle_min + tlpLaserScan->angle_increment*i)*tlpLaserScan->ranges[i];
             laserDataTf_.push_back(newLaserPoint);
         }
     }
+
+    /*
     //calc direction
     for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it!=laserDataTf_.end()-1; it++) {
         float theta = atan2((it+1)->position.x-it->position.x, (it+1)->position.y-it->position.y) - M_PI/2;
@@ -178,6 +233,7 @@ void LocalPlanner::analyzeLaserData()
         }
     }
 
+    */
     geometry_msgs::PoseArray poseArray;
     poseArray.header.frame_id = "laser";
     poseArray.poses = laserDataTf_;

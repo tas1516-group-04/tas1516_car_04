@@ -18,6 +18,8 @@ using std::string;
 
 // distance between the front and back wheels
 #define WHEELBASE 0.3
+// car width
+#define CARWIDTH  0.5
 
 sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
 
