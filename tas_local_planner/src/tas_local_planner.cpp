@@ -133,8 +133,10 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             objectInPath = checkForObject(radius, it->position.x, it->position.y);
         }
         // search for avoidance path
+
         if(objectInPath) {
             ROS_INFO("TLP: Object in Path!");
+            
             int helper = 1;
             while(true) {
                 bool objectLeft = true;
@@ -162,6 +164,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 }
                 helper++;
             }
+            //cmd_vel.angular.z = steerAngle*0.6; //remove!
         } else {
             cmd_vel.angular.z = steerAngle*0.6;
         }
@@ -181,7 +184,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     } else {
         //cmd_vel.linear.x = 1.1 - (cmd_vel.angular.z*M_PI)/4;
         cmd_vel.linear.x =0.2;
-        return true;
+	return true;
     }
     // ---
 }
