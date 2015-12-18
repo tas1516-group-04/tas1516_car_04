@@ -62,24 +62,26 @@ typedef struct {
     } second;
 } corners_t;
 
-
+// Global vars for laser ranges
 dist_t Front;
 dist_t Back;
 
 void processLaserScanF(const sensor_msgs::LaserScan::ConstPtr& scan){
     //scan->ranges[] are laser readings
-    Front.left_dist = scan->ranges[0];
+    Front.right_dist = scan->ranges[0];
     Front.middle_dist = scan->ranges[scan->ranges.size() / 2];
-    Front.right_dist = scan->ranges[scan->ranges.size() - 1];
+    Front.left_dist = scan->ranges[scan->ranges.size() - 1];
     // DEBUG
-    cout << "* Front:" << endl << "  left: " << Front.left_dist << " middle: " << Front.middle_dist << " right: " << endl;
+    //cout << "* Front:" << endl << "  left: " << Front.left_dist << " middle: " << Front.middle_dist << " right: " << Front.right_dist << endl;
 }
 
 void processLaserScanB(const sensor_msgs::LaserScan::ConstPtr& scan){
     //scan->ranges[] are laser readings
-    Front.left_dist = scan->ranges[0];
-    Front.middle_dist = scan->ranges[scan->ranges.size() / 2];
-    Front.right_dist = scan->ranges[scan->ranges.size() - 1];
+    Back.left_dist = scan->ranges[0];
+    Back.middle_dist = scan->ranges[scan->ranges.size() / 2];
+    Back.right_dist = scan->ranges[scan->ranges.size() - 1];
+    // DEBUG
+    //cout << "* Back:" << endl << "  left: " << Back.left_dist << " middle: " << Back.middle_dist << " right: " << Back.right_dist << endl;
 }
 
 int main(int argc, char** argv)
@@ -113,6 +115,7 @@ int main(int argc, char** argv)
                  PARKING_STATE_2,
                  END_PARKING };
 
+    bool display_once = true;
     int state = INIT;
 
     robot_t R;
@@ -120,16 +123,12 @@ int main(int argc, char** argv)
 
     ScanFeatures scan_features;
 
+    geometry_msgs::Twist vel_msg;
 
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(100);
 
     while(ros::ok())
     {
-        geometry_msgs::Twist vel_msg;
-        vel_msg.linear.x = PARKING_SPEED;
-        vel_msg.angular.z = 0;
-
-
 
         /*
         tf::StampedTransform transform;
@@ -160,9 +159,19 @@ int main(int argc, char** argv)
         switch(state) {
 
         case INIT:
+            // ROS_INFO("test ");
+            if (display_once) {
+                ROS_INFO("Start Parking... ");
+                display_once = false;
+            }
+            ROS_INFO("test ");
+
+            vel_msg.linear.x = PARKING_SPEED;
+            vel_msg.angular.z = 0;
+
             // check if in a certain range next to parking wall
-            if (Front.new_dist >= MIN_DIST && Front.new_dist <= MAX_DIST) {
-                ROS_INFO("new_dist is in range for parking");
+            if (Front.left_dist >= MIN_DIST && Front.left_dist <= MAX_DIST) {
+                ROS_INFO("y dist is in range for parking");
 
                 // set robot position in parking coordinate system
                 R.xpos = 0;
@@ -173,6 +182,7 @@ int main(int argc, char** argv)
             break;
 
         case FIRST_CORNER_START:
+            // ROS_INFO("Steer robot along x axis ... ");
             // steer robot
             vel_msg.linear.x = PARKING_SPEED;
             vel_msg.angular.z = Front.diff_dist * STEERING_RATIO;   // TODO define steering ratio
@@ -210,7 +220,6 @@ int main(int argc, char** argv)
 
             if (Back.new_dist >= MIN_GAP_DEPTH && Back.new_dist <= MAX_GAP_DEPTH) {
                 ROS_INFO("dist_diff is in range for second corner start");
-
                 // capture robot position now for second corner start
                 C.second.start.xpos = R.xpos;
                 C.second.start.ypos = Front.new_dist;
