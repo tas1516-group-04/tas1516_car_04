@@ -1,9 +1,11 @@
 #include "parking_node.h"
 //#include "laserhandle.h"
-#include "laserscantopointcloud.h"
+//#include "laserscantopointcloud.h"
 #include "features.h"
 #include "ScanFeatures.h"
 #include "../../parking_control/src/control/control.h"      // for speed defines ...
+#include <tf/transform_listener.h>
+
 
 #define MAX_DIST            0.35
 #define MIN_DIST            0.3
@@ -53,26 +55,37 @@ typedef struct {
 } corners_t;
 
 
+float yposF = 9999;
+float yposB = 9999;
+
+void processLaserScanF(const sensor_msgs::LaserScan::ConstPtr& scan){
+     //scan->ranges[] are laser readings
+    yposF = scan->ranges[0];
+}
+
+void processLaserScanB(const sensor_msgs::LaserScan::ConstPtr& scan){
+     //scan->ranges[] are laser readings
+    yposB = scan->ranges[scan->ranges.size() - 1];
+}
+
 int main(int argc, char** argv)
 {
-
+    ROS_INFO("Init ros node...");
     ros::init(argc, argv, "parking_node");
 
     ros::NodeHandle nF;
     ros::NodeHandle nB;
+
     ros::NodeHandle nVel;
+
+    ROS_INFO("Add subscribers...");
+    ros::Subscriber lsF_sub = nF.subscribe<sensor_msgs::LaserScan>("/scan",10, processLaserScanF);
+    ros::Subscriber lsB_sub = nB.subscribe<sensor_msgs::LaserScan>("/scan_back",10, processLaserScanB);
 
     ros::Publisher cmd_vel_pub = nVel.advertise<geometry_msgs::Twist>("cmd_vel", 1000);
 
     // tf listener for robot position:
     tf::TransformListener tf_listener;
-
-
-    LaserScanToPointCloud lsF(nF, "scan");
-    LaserScanToPointCloud lsB(nB, "scan_back");
-
-    sensor_msgs::PointCloud cloudF;
-    sensor_msgs::PointCloud cloudB;
 
     Features features;
 
@@ -118,12 +131,12 @@ int main(int argc, char** argv)
         */
 
         // Calc distances for front laser scan, very LEFT ray
-        Front.new_dist = scan_features.calcMean(lsF.getScan(), NUM_MEAN_SAMPLES);
+        Front.new_dist = yposF;
         Front.diff_dist = Front.old_dist - Front.new_dist;
         Front.old_dist = Front.new_dist;
 
         // Calc distances for Back laser scan, very RIGHT ray
-        Back.new_dist = scan_features.calcMean(lsB.getScan(), NUM_MEAN_SAMPLES);
+        Back.new_dist = yposB;
         Back.diff_dist = Back.old_dist - Back.new_dist;
         Back.old_dist = Back.new_dist;
 
