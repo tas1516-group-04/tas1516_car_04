@@ -57,7 +57,6 @@ int main(int argc, char** argv)
 {
 
     ros::init(argc, argv, "parking_node");
-    ros::Rate loop_rate(10);
 
     ros::NodeHandle nF;
     ros::NodeHandle nB;
@@ -92,6 +91,9 @@ int main(int argc, char** argv)
     corners_t C;
 
     ScanFeatures scan_features;
+
+
+    ros::Rate loop_rate(10);
 
     while(ros::ok())
     {
