@@ -41,12 +41,12 @@ int main(int argc, char **argv)
     tf::TransformListener tf_listener;
     SpeedController sc (&tf_listener);
     ros::Subscriber plan_subscriber = n.subscribe("move_base_node/NavfnROS/plan", 10, &SpeedController::planReceivedCallback, &sc);
-    ros::Rate loop_rate(1);
+    ros::Rate loop_rate(5);
     while(ros::ok())
     {
         if (sc.current_plan)
         {
-            ROS_INFO("Plan received.");
+           // ROS_INFO("path_idx: %u", sc.locateOnPath(sc.current_plan));
         }
         else
         {

@@ -12,7 +12,7 @@ class SpeedController
 {
 public:
     SpeedController(const tf::TransformListener*);
-    size_t locateOnPath(nav_msgs::PathConstPtr);
+    unsigned int locateOnPath(nav_msgs::PathConstPtr);
     double calcCurveValue();
     double calcSpeed();
     void planReceivedCallback(const nav_msgs::Path::ConstPtr &path);
@@ -48,8 +48,9 @@ SpeedController::SpeedController(const tf::TransformListener* listener)
 void SpeedController::planReceivedCallback(const nav_msgs::Path::ConstPtr& path)
 {
     current_plan = path;
+    ROS_INFO("Plan received.");
 }
-size_t SpeedController::locateOnPath(nav_msgs::PathConstPtr current_path)
+unsigned int SpeedController::locateOnPath(nav_msgs::PathConstPtr current_path)
 {
     // Find the position of the car in map and transform it to PoseStamped
     tf::StampedTransform carTransform;
@@ -59,8 +60,8 @@ size_t SpeedController::locateOnPath(nav_msgs::PathConstPtr current_path)
 
 
     double minDistance = calcDistance((geometry_msgs::PoseStamped&) current_path->poses[0], carPose);
-    size_t closestPointIdx = 0;
-    for (size_t i = 1; i < current_path->poses.size(); i += 5)
+    unsigned int closestPointIdx = 0;
+    for (unsigned int i = 1; i < current_path->poses.size(); i += 5)
     {
         double distance = calcDistance((geometry_msgs::PoseStamped&) current_path->poses[i], carPose);
         if (distance < minDistance)
