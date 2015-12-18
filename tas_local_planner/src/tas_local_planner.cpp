@@ -30,14 +30,25 @@ float calcAngle(float x, float y, float &radiusOut) {
 }
 
 bool checkForObject(float r, float x, float y) {
-    if(pow(x,2) + pow(y-r-CARWIDTH/2,2) - pow(r,2) > 0 || pow(x,2) + pow(y-r+CARWIDTH/2,2) > 0) {
-        // return true if object in path
-        return true;
+    if(r > 0) {
+        if(pow(x,2) + pow(y-r-CARWIDTH/2,2) - pow(r,2) > 0 && pow(x,2) + pow(y-r+CARWIDTH/2,2) -pow(r,2) < 0) {
+            // return true if object in path
+            return true;
+        } else {
+            // return false otherwise
+            return false;
+        }
     } else {
-        // return false otherwise
-        return false;
+        if(pow(x,2) + pow(y+r-CARWIDTH/2,2) - pow(r,2) < 0 && pow(x,2) + pow(y+r+CARWIDTH/2,2) - pow(r,2) > 0) {
+            // return true if object in path
+            return true;
+        } else {
+            // return false otherwise
+            return false;
+        }
     }
 }
+
 
 //Default Constructor
 namespace tas_local_planner {
@@ -157,7 +168,6 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     }
     // emergency stop
     bool stopCar = false;
-    return true;
     for(int i = 0; i < 640; i++) {
         //if one front laser scan distance < 0.5 turn off the engine
         if(tlpLaserScan->ranges[i] < 0.0) {
@@ -171,6 +181,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     } else {
         //cmd_vel.linear.x = 1.1 - (cmd_vel.angular.z*M_PI)/4;
         cmd_vel.linear.x =0.2;
+        return true;
     }
     // ---
 }
@@ -193,7 +204,7 @@ void LocalPlanner::analyzeLaserData()
     //transform to vector form
     laserDataTf_.clear();
     int numberLaserPoints = (int) ( (abs(tlpLaserScan->angle_min) + abs(tlpLaserScan->angle_max))/tlpLaserScan->angle_increment);
-    for(int i = 200; i < numberLaserPoints-200; i++) {
+    for(int i = 100; i < numberLaserPoints-100; i++) {
         //max distance
         if(tlpLaserScan->ranges[i] < 1.5) {
             geometry_msgs::Pose newLaserPoint;
@@ -203,7 +214,7 @@ void LocalPlanner::analyzeLaserData()
         }
     }
 
-    /*
+
     //calc direction
     for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it!=laserDataTf_.end()-1; it++) {
         float theta = atan2((it+1)->position.x-it->position.x, (it+1)->position.y-it->position.y) - M_PI/2;
@@ -211,6 +222,7 @@ void LocalPlanner::analyzeLaserData()
         it->orientation.z = cos(theta/2);
     }
 
+    /*
     laserObjects_.clear();
     LaserObject newObject;
     int helper = 0;
