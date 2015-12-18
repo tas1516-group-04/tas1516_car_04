@@ -25,7 +25,7 @@ int main(int argc, char** argv)
                 //ROS_INFO("Automatic Control!");
                 if(autonomous_control.cmd_linearVelocity>0)
                 {
-                    autonomous_control.control_servo.x = 1560;
+                    autonomous_control.control_servo.x = 1585;
                 }
                 else if(autonomous_control.cmd_linearVelocity<0)
                 {

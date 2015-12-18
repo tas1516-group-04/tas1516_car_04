@@ -100,7 +100,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                  (float) plan_[point].pose.orientation.w);
         float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
         if(plan_[point].pose.position.y < 0) steerAngle = steerAngle * (-1);
-        cmd_vel.angular.z = steerAngle*0.4;
+        cmd_vel.angular.z = steerAngle*0.6;
     }
     // emergency stop
     bool stopCar = false;

@@ -30,7 +30,7 @@ void activeCb() {
  * Callback function, called every time feedback is received for the goal
  */
 void feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback) {
-    ROS_INFO("[X]:%f [Y]:%f [W]: %f [Z]: %f", feedback->base_position.pose.position.x,feedback->base_position.pose.position.y,feedback->base_position.pose.orientation.w, feedback->base_position.pose.orientation.z);
+   // ROS_INFO("[X]:%f [Y]:%f [W]: %f [Z]: %f", feedback->base_position.pose.position.x,feedback->base_position.pose.position.y,feedback->base_position.pose.orientation.w, feedback->base_position.pose.orientation.z);
 }
 
 /**
