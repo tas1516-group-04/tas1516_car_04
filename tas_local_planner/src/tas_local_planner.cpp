@@ -24,6 +24,7 @@ float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b)
 float calcAngle(float x, float y) {
     // radius from wheelbase and steerAngle
     //float radius = WHEELBASE / tan(steerAngle);
+    if(y == 0) return 0;
     float radius = abs((pow(x,2)+pow(y,2))/(2*y));
     return atan(WHEELBASE/radius);
 }
@@ -46,6 +47,9 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         costmap_ros_ = costmap_ros;
         goalIsReached_ = false;
 
+        //debug file
+        debugFile_.open("debug.txt");
+
         //finish initialization
         ROS_INFO("TAS LocalPlanner succesfully initialized!");
         initialized_ = true;
@@ -63,27 +67,42 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
         // costmap Global Frame ID = odom
         // transform robot pose to geometry_msgs::Stamped
+        /*
         tf::Stamped<tf::Pose> tempRobotPose;
         costmap_ros_->getRobotPose(tempRobotPose); //frame id = odom
         tf::poseStampedTFToMsg(tempRobotPose, robotPose_);
+        */
 
         // transform global plan to odom frame
         // TODO: check if transformation is working!
-        tf::StampedTransform transform;
-        tf_->lookupTransform("odom","map", ros::Time(0),transform);
+        // ROS_INFO("gbl map frame id: %s", plan_.at(0).header.frame_id.c_str());
+        //tf::StampedTransform transform;
+        //tf_->lookupTransform("laser","map", ros::Time(0),transform);
         for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin(); it != plan_.end(); it++) {
-            tf::Stamped<tf::Pose> poseTf;
-            tf::poseStampedMsgToTF(*it,poseTf);
-            poseTf.setOrigin(transform.getOrigin());
-            poseTf.setRotation(transform.getRotation());
-            tf::poseStampedTFToMsg(tempRobotPose, *it);
+            tf_->waitForTransform("laser", "map", it->header.stamp, ros::Duration(3.0));
+            tf_->transformPose("laser", *it, *it);
+            //tf_->transformPose("base_link", *it, *it);
+            //tf_->transformPose("laser", *it, *it);
         }
-        // plan_ now in frame odom
+        // plan_ now in frame laser
 
-        // calc steerAngle from trajectorie
+        /// calc steerAngle from trajectorie
         // TODO: which point from plan? depending on distance?
-        float steerAngle = calcAngle(plan_[5].pose.position.x,plan_[5].pose.position.y);
-        if(plan_[5].pose.position.y < 0) steerAngle = steerAngle * (-1);
+        int point = 40; // which point first? distance?
+        ROS_INFO("Distance: %f", calcDistance(plan_[0], plan_[1]));
+        // +/- M_PI/2? check!
+        while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.25){
+            point ++;
+        }
+        // debug
+        ROS_INFO("TLP: Point [%i]  x: %f y: %f z: %f w: %f",
+                 point,
+                 (float) plan_[point].pose.position.x,
+                 (float) plan_[point].pose.position.y,
+                 (float) plan_[point].pose.orientation.z,
+                 (float) plan_[point].pose.orientation.w);
+        float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
+        if(plan_[point].pose.position.y < 0) steerAngle = steerAngle * (-1);
         cmd_vel.angular.z = steerAngle;
     }
 
@@ -91,7 +110,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     bool stopCar = false;
     for(int i = 0; i < 640; i++) {
         //if one front laser scan distance < 0.5 turn off the engine
-        if(tlpLaserScan->ranges[i] < 0.5) {
+        if(tlpLaserScan->ranges[i] < 0.0) {
             stopCar = true;
         }
     }
@@ -101,7 +120,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         return true;
     } else {
         //cmd_vel.linear.x = 1.1 - (cmd_vel.angular.z*M_PI)/4;
-        cmd_vel.linear.x =0.1;
+        cmd_vel.linear.x =0.2;
         return true;
     }
     // ---
