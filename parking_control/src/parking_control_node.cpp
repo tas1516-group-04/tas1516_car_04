@@ -1,4 +1,7 @@
 #include "control/control.h"
+#include <iostream>
+
+using namespace std;
 
 int main(int argc, char** argv)
 {
@@ -7,11 +10,16 @@ int main(int argc, char** argv)
 
     ros::Rate loop_rate(50);
 
+    int display_counter = 0;
+
     while(ros::ok())
     {
+        display_counter++;
+
         if(autonomous_control.control_Mode.data==0)
         {
-            ROS_INFO("Manually Control!");
+            if (display_counter%(50*2) == 0)
+                ROS_INFO("Manually Control!");
         }
         else
         {
@@ -22,19 +30,23 @@ int main(int argc, char** argv)
             }
             else
             {
-                ROS_INFO("Automatic Control!");
+                if (display_counter%(50*2) == 0)
+                    ROS_INFO("Automatic Control!");
+
                 if(autonomous_control.cmd_linearVelocity>0)
                 {
-                    autonomous_control.control_servo.x = SERVO_PARKING_SPEED_FORWARD;
+                    autonomous_control.control_servo.x = 1500 + autonomous_control.cmd_linearVelocity * 100;
                 }
                 else if(autonomous_control.cmd_linearVelocity<0)
                 {
-                    autonomous_control.control_servo.x = SERVO_PARKING_SPEED_BACKWARD;
+                    autonomous_control.control_servo.x = 1500 - autonomous_control.cmd_linearVelocity * 100;
                 }
                 else
                 {
                     autonomous_control.control_servo.x = 1500;
                 }
+
+                cout << "Speed: " << autonomous_control.control_servo.x << endl;
 
                 autonomous_control.control_servo.y = autonomous_control.cmd_steeringAngle;
             }

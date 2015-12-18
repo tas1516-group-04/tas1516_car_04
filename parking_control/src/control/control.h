@@ -13,8 +13,8 @@
 #define SCALE_FAKTOR_STEERING   500
 
 // my defines
-#define PARKING_SPEED                   1.0
-#define STEERING_RATIO                  1.0
+#define PARKING_SPEED                   0.3
+#define STEERING_RATIO                  0.1
 #define MAX_STEERING                    10.0
 
 #define SPEED_RATIO                     50.0

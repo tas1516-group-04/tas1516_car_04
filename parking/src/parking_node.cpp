@@ -9,20 +9,24 @@
 
 using namespace std;
 
-#define MAX_DIST                0.35
-#define MIN_DIST                0.3
+#define MAX_DIST                0.40
+#define MIN_DIST                0.30
 #define NUM_MEAN_SAMPLES        10
 
-#define MIN_GAP_DEPTH           0.2
-#define MAX_GAP_DEPTH           0.35
+#define MAX_GAP_DEPTH           MAX_DIST
+#define MIN_GAP_DEPTH           MIN_DIST
 
 #define MIN_GAP_LENGTH          0.4
 #define MAX_GAP_LENGTH          1.0
 
 #define RANGE_THRESHOLD         0.05
 
-#define BACKWARD_THRESHOLD_1    0.5
+#define BACKWARD_THRESHOLD_1    0.2
 #define BACKWARD_THRESHOLD_2    0.1
+
+#define LINEAR_CONTROL_ON       1.0
+
+#define LINEAR_SPEED            0.3 * LINEAR_CONTROL_ON
 
 
 typedef struct {
@@ -116,6 +120,8 @@ int main(int argc, char** argv)
                  END_PARKING };
 
     bool display_once = true;
+
+    // set start state
     int state = INIT;
 
     robot_t R;
@@ -127,47 +133,32 @@ int main(int argc, char** argv)
 
     ros::Rate loop_rate(100);
 
+    int display_counter = 0;
+
+    // set speed to zero
+    vel_msg.linear.x = 0;
+    vel_msg.angular.z = 0;
+    cmd_vel_pub.publish(vel_msg);
+
     while(ros::ok())
     {
-
-        /*
-        tf::StampedTransform transform;
-        try{
-          tf_listener.lookupTransform("/base_link", "/map", ros::Time(0), transform);   // TODO change to no transform of robot coordinates
+        display_counter = 1;
+        if (display_counter%100 == 0) {
+            cout << "* Front:" << endl << "  left: " << Front.left_dist << " middle: " << Front.middle_dist << " right: " << Front.right_dist << endl;
+            cout << "* Back:" << endl << "  left: " << Back.left_dist << " middle: " << Back.middle_dist << " right: " << Back.right_dist << endl;
         }
-        catch (tf::TransformException ex){
-          ROS_ERROR("%s",ex.what());
-          ros::Duration(1.0).sleep();
-        }
-        // update robot position;
-        R.xpos = transform.getOrigin().x();
-        R.ypos = transform.getOrigin().y();
-        */
-
-        /*
-        // Calc distances for front laser scan, very LEFT ray
-        Front.new_dist = yposF;
-        Front.diff_dist = Front.old_dist - Front.new_dist;
-        Front.old_dist = Front.new_dist;
-
-        // Calc distances for Back laser scan, very RIGHT ray
-        Back.new_dist = yposB;
-        Back.diff_dist = Back.old_dist - Back.new_dist;
-        Back.old_dist = Back.new_dist;
-        */
 
         switch(state) {
 
         case INIT:
-            // ROS_INFO("test ");
             if (display_once) {
                 ROS_INFO("Start Parking... ");
                 display_once = false;
             }
-            ROS_INFO("test ");
 
-            vel_msg.linear.x = PARKING_SPEED;
+            vel_msg.linear.x = LINEAR_SPEED;
             vel_msg.angular.z = 0;
+            cmd_vel_pub.publish(vel_msg);
 
             // check if in a certain range next to parking wall
             if (Front.left_dist >= MIN_DIST && Front.left_dist <= MAX_DIST) {
@@ -178,17 +169,19 @@ int main(int argc, char** argv)
                 R.ypos = Front.new_dist;
 
                 state = FIRST_CORNER_START;
+                ROS_INFO("state: FIRST_CORNER_START");
+                ROS_INFO("Steer robot along x axis ... ");
             }
             break;
 
         case FIRST_CORNER_START:
-            // ROS_INFO("Steer robot along x axis ... ");
             // steer robot
-            vel_msg.linear.x = PARKING_SPEED;
-            vel_msg.angular.z = Front.diff_dist * STEERING_RATIO;   // TODO define steering ratio
+            vel_msg.linear.x = LINEAR_SPEED;
+            vel_msg.angular.z = Front.left_dist * STEERING_RATIO;   // TODO define steering ratio
+            cmd_vel_pub.publish(vel_msg);
 
             // check if in range to detect first corner start
-            if (Front.new_dist >= MIN_GAP_DEPTH && Front.new_dist <= MAX_GAP_DEPTH) {
+            if (Front.left_dist >= MIN_GAP_DEPTH && Front.left_dist <= MAX_GAP_DEPTH) {
                 ROS_INFO("dist_diff is in range for first corner detection");
 
                 // capture corner position now for first corner start
@@ -196,35 +189,42 @@ int main(int argc, char** argv)
                 C.first.start.ypos = Front.new_dist;
 
                 state = FIRST_CORNER_END;
+                ROS_INFO("state: FIRST_CORNER_END");
             }
             break;
         case FIRST_CORNER_END:
             // steer robot
-            vel_msg.linear.x = PARKING_SPEED;
+            vel_msg.linear.x = LINEAR_SPEED;
             vel_msg.angular.z = Front.diff_dist * STEERING_RATIO;   // TODO define steering ratio
+            cmd_vel_pub.publish(vel_msg);
+
             // check if in range to detect first corner end
-            if (Front.new_dist <= MIN_GAP_DEPTH) {
-                ROS_INFO("dist_diff is in range for first corner end");
+            if (Front.left_dist <= MIN_GAP_DEPTH) {
+                ROS_INFO("Front.left_dist is in range for first corner end");
 
                 // capture robot position now for first corner end
                 C.first.end.xpos = R.xpos;
                 C.first.end.ypos = Front.new_dist;
 
                 state = SECOND_CORNER_START;
+                ROS_INFO("state: SECOND_CORNER_START");
             }
             break;
         case SECOND_CORNER_START:
             // steer robot
-            vel_msg.linear.x = PARKING_SPEED;
+            vel_msg.linear.x = LINEAR_SPEED;
             vel_msg.angular.z = Front.diff_dist * STEERING_RATIO;   // TODO define steering ratio
+            cmd_vel_pub.publish(vel_msg);
 
-            if (Back.new_dist >= MIN_GAP_DEPTH && Back.new_dist <= MAX_GAP_DEPTH) {
-                ROS_INFO("dist_diff is in range for second corner start");
+            if (Back.left_dist >= MIN_GAP_DEPTH && Back.left_dist <= MAX_GAP_DEPTH) {
+                ROS_INFO("Back.left_dist is in range for second corner start");
+
                 // capture robot position now for second corner start
                 C.second.start.xpos = R.xpos;
                 C.second.start.ypos = Front.new_dist;
-
-                state = SECOND_CORNER_END;
+                state = START_PARKING;
+                ROS_INFO("state: START_PARKING");
+                ROS_INFO("Driving backwards with min steering angle...");
             }
             break;
         /*
@@ -239,71 +239,81 @@ int main(int argc, char** argv)
                 state = START_PARKING;
             }
             break;
+
         */
         case START_PARKING:
-            ROS_INFO("All corners detected. Start Parking:");
-            ROS_INFO("Driving backwards with max steering angle...");
 
-            vel_msg.linear.x = - PARKING_SPEED;
-            vel_msg.angular.z = MAX_STEERING;
+            vel_msg.linear.x = - LINEAR_SPEED;
+            vel_msg.angular.z = - MAX_STEERING;
+            cmd_vel_pub.publish(vel_msg);
 
             // check if first backward distance reached
-            if (Back.new_dist <= BACKWARD_THRESHOLD_1) {
+            if (Back.middle_dist <= BACKWARD_THRESHOLD_1) {
                 state = PARKING_STATE_1;
+                ROS_INFO("state: PARKING_STATE_1");
+                ROS_INFO("Steering reversal point reached!");
+                ROS_INFO("Driving Backwards with max steering angle...");
             }
 
             break;
 
         case PARKING_STATE_1:
-            ROS_INFO("Steering reversal point reached!");
-            ROS_INFO("Driving Backwards with min. steering angle...");
 
-            vel_msg.linear.x = - PARKING_SPEED;
-            vel_msg.angular.z = - MAX_STEERING;
+            vel_msg.linear.x = - LINEAR_SPEED;
+            vel_msg.angular.z = MAX_STEERING;
+            cmd_vel_pub.publish(vel_msg);
 
             // check if first backward distance reached
-            if (Back.new_dist <= BACKWARD_THRESHOLD_2) {
+            if (Back.middle_dist <= BACKWARD_THRESHOLD_2) {
                 state = PARKING_STATE_2;
+                ROS_INFO("state:PARKING_STATE_2");
             }
 
             break;
 
         case PARKING_STATE_2:
-            ROS_INFO("Minimum distance to back reached!");
-            ROS_INFO("Driving forward for 0.1 m if way is cleared");
+            if (display_once) {
+                ROS_INFO("Minimum distance to back reached!");
+                ROS_INFO("Driving forward for 0.1 m if way is cleared");
+
+                display_once = false;
+            }
 
             // TODO add ray component for middle ray here
-            if (Front.new_dist >= 0.2) {
-                vel_msg.linear.x = PARKING_SPEED;
+            if (Front.middle_dist >= 0.2) {
+                vel_msg.linear.x = LINEAR_SPEED;
                 vel_msg.angular.z = 0;
+                cmd_vel_pub.publish(vel_msg);
             }
 
             // check if forward min distance reached
-            if (Front.new_dist <= 0.2) {
+            if (Front.middle_dist <= 0.2) {
                 state = END_PARKING;
+                ROS_INFO("state: END_PARKING");
             }
 
             break;
 
         case END_PARKING:
-            ROS_INFO("Parking Finished. Setting speed to zero!");
-            vel_msg.linear.x = PARKING_SPEED;
+            if (display_once) {
+                ROS_INFO("Parking Finished. Setting speed to zero!");
+                display_once = false;
+            }
+
+            vel_msg.linear.x = 0;
             vel_msg.angular.z = 0;
+            cmd_vel_pub.publish(vel_msg);
 
             ROS_INFO("Finished! Exiting...");
             exit(EXIT_SUCCESS);
             break;
 
          default:
-
             // set speed to zero
-            vel_msg.linear.x = PARKING_SPEED;
-            vel_msg.angular.z = STEERING_RATIO;
+            vel_msg.linear.x = 0;
+            vel_msg.angular.z = 0;
             ROS_INFO ("Aborted state machine. Set speed to zero");
         }
-
-        // pusblish new cmd_vel
-        cmd_vel_pub.publish(vel_msg);
 
         ros::spinOnce();
         loop_rate.sleep();
