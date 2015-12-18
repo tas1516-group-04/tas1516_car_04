@@ -14,5 +14,7 @@
   <!-- include file="$(find tas)/launch/move_base.launch" /-->
 
   <node pkg = "parking_control" type="parking_control_node" name="parking_control_node" output="screen"/>
+  <node pkg = "parking" type="parking_node" name="parking_node" output="screen"/>
+
 
 </launch>
