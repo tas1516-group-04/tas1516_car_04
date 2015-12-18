@@ -30,7 +30,7 @@ float calcAngle(float x, float y, float &radiusOut) {
 }
 
 bool checkForObject(float r, float x, float y) {
-    if(pow(x,2) + pow(y-r-CARWIDTH/2,2) - pow(r,2) > 0 || pow(x,2) + pow(y-r+CARWIDTH/2,2) > 0) {
+    if(pow(x,2) + pow(y-r-CARWIDTH/2,2) - pow(r,2) > 0 && pow(x,2) + pow(y-r+CARWIDTH/2,2) < 0) {
         // return true if object in path
         return true;
     } else {
@@ -122,8 +122,10 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             objectInPath = checkForObject(radius, it->position.x, it->position.y);
         }
         // search for avoidance path
+
         if(objectInPath) {
             ROS_INFO("TLP: Object in Path!");
+            
             int helper = 1;
             while(true) {
                 bool objectLeft = true;
@@ -151,13 +153,13 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 }
                 helper++;
             }
+            //cmd_vel.angular.z = steerAngle*0.6; //remove!
         } else {
             cmd_vel.angular.z = steerAngle*0.6;
         }
     }
     // emergency stop
     bool stopCar = false;
-    return true;
     for(int i = 0; i < 640; i++) {
         //if one front laser scan distance < 0.5 turn off the engine
         if(tlpLaserScan->ranges[i] < 0.0) {
@@ -171,6 +173,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     } else {
         //cmd_vel.linear.x = 1.1 - (cmd_vel.angular.z*M_PI)/4;
         cmd_vel.linear.x =0.2;
+	return true;
     }
     // ---
 }
