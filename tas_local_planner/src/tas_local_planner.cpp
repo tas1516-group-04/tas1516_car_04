@@ -63,8 +63,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     analyzeLaserData();
 
     //calc angular component of cmd_vel
-    if(globalPlanIsSet_ && plan_.size() > 51) {
-        goalIsReached_ = false;
+    if(globalPlanIsSet_ && goalIsReached_ == false) {
         // costmap Global Frame ID = odom
         // transform robot pose to geometry_msgs::Stamped
         /*
@@ -87,7 +86,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         /// calc steerAngle from trajectorie
         // TODO: which point from plan? depending on distance?
         int point = 50; // which point first? distance?
-        ROS_INFO("Distance: %f", calcDistance(plan_[0], plan_[1]));
+        ROS_INFO("Distance: %f", calcDistance(plan_[0], plan_[point]));
         // +/- M_PI/2? check!
         while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.3){
             point ++;
@@ -101,12 +100,8 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                  (float) plan_[point].pose.orientation.w);
         float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
         if(plan_[point].pose.position.y < 0) steerAngle = steerAngle * (-1);
-        cmd_vel.angular.z = steerAngle*0.5;
-    } else if(globalPlanIsSet_) {
-        goalIsReached_ = true;
-        return false;
+        cmd_vel.angular.z = steerAngle*0.4;
     }
-
     // emergency stop
     bool stopCar = false;
     for(int i = 0; i < 640; i++) {
@@ -129,6 +124,11 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
     ROS_INFO("TLP: new global plan received! length: %i", (int) plan.size());
     globalPlanIsSet_ = true;
+    if(plan.size() < 55) {
+        goalIsReached_ = true;
+    } else {
+        goalIsReached_ = false;
+    }
     plan_ = plan;
 }
 bool LocalPlanner::isGoalReached() {
