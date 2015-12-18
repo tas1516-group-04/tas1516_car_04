@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>curve_detect</name>
+  <name>speed_control</name>
   <version>0.0.0</version>
-  <description>The curve_detect package</description>
+  <description>The speed_control package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
