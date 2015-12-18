@@ -3,6 +3,7 @@
 #include "laserscantopointcloud.h"
 #include "features.h"
 #include "ScanFeatures.h"
+#include <iostream>
 
 #define MAX_DIST 1.0
 #define MIN_DIST 0.3
@@ -16,6 +17,7 @@
 
 #define RANGE_THRESHOLD 0.05
 
+using namespace std;
 
 typedef struct {
     float new_dist;
@@ -92,7 +94,7 @@ int main(int argc, char** argv)
 
         tf::StampedTransform transform;
         try{
-          tf_listener.lookupTransform("/base_link", "/map", ros::Time(0), transform);   // TODO change to no transform of robot coordinates
+          tf_listener.lookupTransform("odom", "/map", ros::Time(0), transform);   // TODO change to no transform of robot coordinates
         }
         catch (tf::TransformException ex){
           ROS_ERROR("%s",ex.what());
@@ -101,7 +103,6 @@ int main(int argc, char** argv)
         // update robot position;
         R.xpos = transform.getOrigin().x();
         R.ypos = transform.getOrigin().y();
-
 
         // Calc distances for front laser scan, very LEFT ray
         Front.new_dist = scan_features.calcMean(lsF.getScan(), NUM_MEAN_SAMPLES);
@@ -170,11 +171,14 @@ int main(int argc, char** argv)
             break;
         }
 
+        // DEBUG Info
+        cout << "state:" << state << endl;
+        cout << "Front: diff_dist:" << Front.diff_dist << " new_dist:" << Front.new_dist << " old_dist:"
+ << Front.old_dist << endl;
+        cout << "Back: diff_dist:" << Back.diff_dist << " new_dist:" << Back.new_dist << " old_dist:"
+ << Back.old_dist << endl;
         ros::spin();
     }
-
-
-
 
     return 0;
 }
