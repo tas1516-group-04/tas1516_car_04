@@ -143,7 +143,7 @@ include_directories(
 #add_dependencies(speed_control ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(speed_control_node src/speed_control.cpp)
+add_executable(speed_control_node src/speed_control.cpp src/speed_controller.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
