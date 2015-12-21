@@ -74,7 +74,7 @@ private:
     // functions
     //void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
     int makeDecision();
-    void analyzeLaserData();
+    void analyzeLaserData(float r);
     void tfRobotPose();
 
 };

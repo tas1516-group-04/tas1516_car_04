@@ -82,8 +82,6 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
 
 bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
-    analyzeLaserData();
-
     //calc angular component of cmd_vel
     if(globalPlanIsSet_ && goalIsReached_ == false) {
         // costmap Global Frame ID = odom
@@ -128,6 +126,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         /// obstacle avoidance
 
         // check if one laser point
+        analyzeLaserData(radius);
         bool objectInPath = false;
         for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
             // returns true if one laser point is in path
@@ -205,14 +204,14 @@ bool LocalPlanner::isGoalReached() {
     return goalIsReached_;
 }
 
-void LocalPlanner::analyzeLaserData()
+void LocalPlanner::analyzeLaserData(float r)
 {
     //transform to vector form
     laserDataTf_.clear();
     int numberLaserPoints = (int) ( (abs(tlpLaserScan->angle_min) + abs(tlpLaserScan->angle_max))/tlpLaserScan->angle_increment);
     for(int i = 100; i < numberLaserPoints-100; i++) {
         //max distance
-        if(tlpLaserScan->ranges[i] < 2.0) {
+        if(tlpLaserScan->ranges[i] < sqrt(2)*r && tlpLaserScan->ranges[i] < 2) {
             geometry_msgs::Pose newLaserPoint;
             newLaserPoint.position.x = cos(tlpLaserScan->angle_min + tlpLaserScan->angle_increment*i)*tlpLaserScan->ranges[i];
             newLaserPoint.position.y = sin(tlpLaserScan->angle_min + tlpLaserScan->angle_increment*i)*tlpLaserScan->ranges[i];
