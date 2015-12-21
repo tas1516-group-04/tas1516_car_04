@@ -132,6 +132,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
             // returns true if one laser point is in path
             objectInPath = checkForObject(radius, it->position.x, it->position.y);
+            if(objectInPath) break;
         }
         // search for avoidance path
 
