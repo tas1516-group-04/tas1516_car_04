@@ -80,7 +80,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         /// calc steerAngle from trajectorie
         // TODO: which point from plan? depending on distance?
         int point = minTargetPoint_; // which point first? distance?
-        ROS_INFO("Distance: %f", calcDistance(plan_[0], plan_[point]));
+        //ROS_INFO("Distance: %f", calcDistance(plan_[0], plan_[point]));
         // +/- M_PI/2? check!
         while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.3){
             point ++;
@@ -112,13 +112,13 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             ROS_INFO("TLP: Object in path!");
 
             int helper = 1;
-            steerAngle = 0; //for testing
+            //steerAngle = 0; //for testing
             while(true) {
                 bool objectLeft = true;
                 bool objectRight = true;
 
-                float angleInc =  steerAngle*steeringAngleParameter_ + helper*0.01;
-                float angleDec =  steerAngle*steeringAngleParameter_ - helper*0.01;
+                float angleInc =  steerAngle + helper*0.01;
+                float angleDec =  steerAngle - helper*0.01;
                 for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
                     objectLeft  = checkForObject(angleInc, it->position.x, it->position.y);
                     objectRight = checkForObject(angleDec, it->position.x, it->position.y);
@@ -140,6 +140,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 }
                 helper++;
             }
+            cmd_vel.linear.x = 0.2;
             //cmd_vel.angular.z = steerAngle*0.6; //remove!
         } else {
             cmd_vel.angular.z = steerAngle*steeringAngleParameter_;
@@ -169,7 +170,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     // ---
 }
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
-    ROS_INFO("TLP: new global plan received! length: %i", (int) plan.size());
+    //ROS_INFO("TLP: new global plan received! length: %i", (int) plan.size());
     globalPlanIsSet_ = true;
     if(plan.size() < minTargetPoint_+5) {
         goalIsReached_ = true;
@@ -190,7 +191,7 @@ void LocalPlanner::analyzeLaserData(float angle)
     int numberLaserPoints = (int) ( (abs(tlpLaserScan->angle_min) + abs(tlpLaserScan->angle_max))/tlpLaserScan->angle_increment);
     for(int i = 100; i < numberLaserPoints-100; i++) {
         //max distance
-        if(tlpLaserScan->ranges[i] < r && tlpLaserScan->ranges[i] < laserMaxDist_) {
+        if(tlpLaserScan->ranges[i] < laserMaxDist_) {
             geometry_msgs::Pose newLaserPoint;
             newLaserPoint.position.x = cos(tlpLaserScan->angle_min + tlpLaserScan->angle_increment*i)*tlpLaserScan->ranges[i];
             newLaserPoint.position.y = sin(tlpLaserScan->angle_min + tlpLaserScan->angle_increment*i)*tlpLaserScan->ranges[i];
