@@ -34,12 +34,12 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         goalIsReached_ = false;
 
         //parameters
-        nodeHandle_.param<float>("car_width", carwidth_, 0.7);
-        nodeHandle_.param<float>("wheelbase", wheelbase_, 0.3);
+        nodeHandle_.param<double>("car_width", carwidth_, 0.7);
+        nodeHandle_.param<double>("wheelbase", wheelbase_, 0.3);
         nodeHandle_.param<bool>("obstacle_avoidance", doObstacleAvoidance_, 0);
         nodeHandle_.param<int>("min_target_point", minTargetPoint_, 50);
-        nodeHandle_.param<float>("steering_angle_parameter", steeringAngleParameter_, 0.6);
-        nodeHandle_.param<float>("laser_max_dist", laserMaxDist_, 2);
+        nodeHandle_.param<double>("steering_angle_parameter", steeringAngleParameter_, 0.6);
+        nodeHandle_.param<double>("laser_max_dist", laserMaxDist_, 2);
 
         //debug file
         debugFile_.open("debug.txt");

@@ -47,12 +47,12 @@ public:
 private:
 
     //parameters
-    float carwidth_;
-    float wheelbase_;
+    double carwidth_;
+    double wheelbase_;
     bool doObstacleAvoidance_;
     int minTargetPoint_;
-    float steeringAngleParameter_;
-    float laserMaxDist_;
+    double steeringAngleParameter_;
+    double laserMaxDist_;
 
     //variables
     bool goalIsReached_;

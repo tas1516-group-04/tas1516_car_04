@@ -13,7 +13,6 @@ SpeedController::SpeedController(ros::NodeHandle &nh, const tf::TransformListene
     cmd_publisher = node_handle.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
     node_handle.param<int>("/speed_control_node/jump_segments", jump_segments, 5);
-
 }
 
 // Callback for the NavfnROS/plan subscriber
