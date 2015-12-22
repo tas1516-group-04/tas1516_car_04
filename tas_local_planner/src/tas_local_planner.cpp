@@ -117,8 +117,8 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 bool objectLeft = true;
                 bool objectRight = true;
 
-                float angleInc =  steerAngle + helper*0.01;
-                float angleDec =  steerAngle - helper*0.01;
+                float angleInc =  steerAngle + helper*0.05;
+                float angleDec =  steerAngle - helper*0.05;
                 for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
                     objectLeft  = checkForObject(angleInc, it->position.x, it->position.y);
                     objectRight = checkForObject(angleDec, it->position.x, it->position.y);
@@ -134,7 +134,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                     ROS_INFO("TLP: Alternative: Right turn! Z: %f",(float) cmd_vel.angular.z);
                     break;
                 }
-                if(helper == 100) {
+                if(helper == 10) {
                     ROS_INFO("TLP: No alternative found!");
                     break;
                 }
@@ -167,7 +167,6 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 	      return true;
     }
     */
-    // ---
 }
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
     //ROS_INFO("TLP: new global plan received! length: %i", (int) plan.size());
