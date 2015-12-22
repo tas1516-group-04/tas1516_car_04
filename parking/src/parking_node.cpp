@@ -9,7 +9,6 @@
 
 using namespace std;
 
-
 typedef struct {
     float new_dist;
     float old_dist;
@@ -69,6 +68,16 @@ void processLaserScanB(const sensor_msgs::LaserScan::ConstPtr& scan){
     //cout << "* Back:" << endl << "  left: " << Back.left_dist << " middle: " << Back.middle_dist << " right: " << Back.right_dist << endl;
 }
 
+float angularControl(double min, double max, float angular_speed)
+{
+    if (Front.left_dist > max)
+        return angular_speed;
+    else if ((Front.left_dist < min))
+        return (- angular_speed);
+    else
+        return 0.00001; // return for neutral steering
+}
+
 int main(int argc, char** argv)
 {
     ROS_INFO("Init ros node...");
@@ -92,8 +101,8 @@ int main(int argc, char** argv)
     double MIN_DIST =                0.30;
     double NUM_MEAN_SAMPLES =        10;
 
-    double MAX_GAP_DEPTH =           0.40;
-    double MIN_GAP_DEPTH =           0.30;
+    double MAX_GAP_DEPTH =           1.0;
+    double MIN_GAP_DEPTH =           0.6;
 
     double MIN_GAP_LENGTH =          0.4;
     double MAX_GAP_LENGTH =          1.0;
@@ -104,10 +113,11 @@ int main(int argc, char** argv)
     double BACKWARD_THRESHOLD_2 =    0.1;
 
     double LINEAR_SPEED =            0.3;
+    double ANGULAR_SPEED =           0.1;
 
 
     // read params from param server
-    ROS_INFO("Read 11 params from ros parameter server (1: successfull, 0: fail)... ");
+    ROS_INFO("Read params from ros parameter server (1: successfull, 0: fail)... ");
 
     cout << n.getParam("MAX_DIST", MAX_DIST);
     cout << n.getParam("MIN_DIST", MIN_DIST);
@@ -125,10 +135,10 @@ int main(int argc, char** argv)
     cout << n.getParam("BACKWARD_THRESHOLD_1", BACKWARD_THRESHOLD_1);
     cout << n.getParam("BACKWARD_THRESHOLD_2", BACKWARD_THRESHOLD_2);
 
-    cout << n.getParam("LINEAR_SPEED", LINEAR_SPEED) << endl;
+    cout << n.getParam("LINEAR_SPEED", LINEAR_SPEED);
+    cout << n.getParam("ANGULAR_SPEED", ANGULAR_SPEED) << endl;
 
     ROS_INFO("done");
-
 
     // Default value version
     //n.param<std::string>("default_param", default_param, "default_value");
@@ -181,7 +191,7 @@ int main(int argc, char** argv)
             }
 
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = 0;
+            vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
             cmd_vel_pub.publish(vel_msg);
 
             // check if in a certain range next to parking wall
@@ -201,7 +211,7 @@ int main(int argc, char** argv)
         case FIRST_CORNER_START:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = Front.left_dist * STEERING_RATIO;   // TODO define steering ratio
+            vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
             cmd_vel_pub.publish(vel_msg);
 
             // check if in range to detect first corner start
@@ -219,7 +229,7 @@ int main(int argc, char** argv)
         case FIRST_CORNER_END:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = Front.diff_dist * STEERING_RATIO;   // TODO define steering ratio
+            vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
             cmd_vel_pub.publish(vel_msg);
 
             // check if in range to detect first corner end
@@ -237,7 +247,7 @@ int main(int argc, char** argv)
         case SECOND_CORNER_START:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = Front.diff_dist * STEERING_RATIO;   // TODO define steering ratio
+            vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
             cmd_vel_pub.publish(vel_msg);
 
             if (Back.left_dist >= MIN_GAP_DEPTH && Back.left_dist <= MAX_GAP_DEPTH) {
