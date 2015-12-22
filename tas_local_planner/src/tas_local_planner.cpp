@@ -94,7 +94,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                  (float) plan_[point].pose.orientation.w);
 
         //calc steering angle
-        float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y)*steeringAngleParameter_;
+        float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
 
         /// obstacle avoidance
 
@@ -124,24 +124,24 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 }
                 // decide what to do
                 if(!objectLeft) {
-                    cmd_vel.angular.z = angleInc;
-                    ROS_INFO("TLP: Alternative: Right turn!");
-                    return false;
+                    cmd_vel.angular.z = angleInc*steeringAngleParameter_;
+                    ROS_INFO("TLP: Alternative: Left turn!");
+                    break;
                 }
                 if(!objectRight) {
-                    cmd_vel.angular.z = angleDec;
-                    ROS_INFO("TLP: Alternative: Left turn!");
-                    return false;
+                    cmd_vel.angular.z = angleDec*steeringAngleParameter_;
+                    ROS_INFO("TLP: Alternative: Right turn!");
+                    break;
                 }
                 if(helper == 100) {
                     ROS_INFO("TLP: No alternative found!");
-                    return false;
+                    break;
                 }
                 helper++;
             }
             //cmd_vel.angular.z = steerAngle*0.6; //remove!
         } else {
-            cmd_vel.angular.z = steerAngle;
+            cmd_vel.angular.z = steerAngle*steeringAngleParameter_;
         }
     }
     // emergency stop
