@@ -1,5 +1,5 @@
 # tlp parameter file
-  car_width: 0.3
+  car_width: 0.1
   wheelbase: 0.3
   obstacle_avoidance: true
   min_target_point: 50
