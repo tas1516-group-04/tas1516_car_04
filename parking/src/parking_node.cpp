@@ -85,12 +85,15 @@ void processImu(const sensor_msgs::Imu::ConstPtr& imu)
 
 float angularControl(double min, double max, float angular_speed)
 {
+    //return angular_speed * (Front.left_dist - max);
+    
     if (Front.left_dist > max)
         return angular_speed;
     else if ((Front.left_dist < min))
         return (- angular_speed);
     else
         return 0.00001; // return for neutral steering
+    
 }
 
 void printLaserRanges()
@@ -138,6 +141,8 @@ int main(int argc, char** argv)
 
     double YAW_THRESHOLD =           0.4;
 
+    double STEERING_FIRST =	     0.6;
+
 
     // read params from param server
     ROS_INFO("Read params from ros parameter server (1: successfull, 0: fail)... ");
@@ -162,6 +167,8 @@ int main(int argc, char** argv)
     cout << n.getParam("ANGULAR_SPEED", ANGULAR_SPEED);
 
     cout << n.getParam("YAW_THRESHOLD", YAW_THRESHOLD);
+    
+    cout << n.getParam("STEERING_FIRST", STEERING_FIRST);
 
     cout << endl;
     ROS_INFO("done");
@@ -317,7 +324,7 @@ int main(int argc, char** argv)
         case START_PARKING:
 
             vel_msg.linear.x = - LINEAR_SPEED;
-            vel_msg.angular.z = - MAX_STEERING;
+            vel_msg.angular.z = - STEERING_FIRST;
             cmd_vel_pub.publish(vel_msg);
 
             // check if first backward distance reached
@@ -366,8 +373,8 @@ int main(int argc, char** argv)
 
             // TODO add ray component for middle ray here
             if (Front.middle_dist >= 0.2) {
-                ROS_INFO("Front.middle_dist is large enough to do a correction step");
-                cout << "Front.middle_dist" << Front.middle_dist << endl;
+                // ROS_INFO("Front.middle_dist is large enough to do a correction step");
+                // cout << "Front.middle_dist" << Front.middle_dist << endl;
 
                 vel_msg.linear.x = LINEAR_SPEED;
                 vel_msg.angular.z = 0;
@@ -376,8 +383,8 @@ int main(int argc, char** argv)
 
             // check if forward min distance reached
             if (Front.middle_dist <= 0.2) {
-                ROS_INFO("Front.middle_dist is to small for correction step");
-                cout << "Front.middle_dist" << Front.middle_dist << endl;
+                // ROS_INFO("Front.middle_dist is to small for correction step");
+                // cout << "Front.middle_dist" << Front.middle_dist << endl;
 
                 state = END_PARKING;
                 ROS_INFO("state: END_PARKING");
