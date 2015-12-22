@@ -10,6 +10,7 @@
 #include "tf/transform_listener.h"
 #include <cmath>
 #include <vector>
+#include <fstream>
 
 class SpeedController {
 public:

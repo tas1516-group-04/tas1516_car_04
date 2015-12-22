@@ -69,6 +69,9 @@ double SpeedController::calcCurveWeight(const double maxDist)
 {
     double accumulatedDistance = 0.0;
     double accumulatedAngle = 0.0;
+    std::fstream logfile("/home/tas_group_04/catkin_ws/src/tas1516_car_04/speed_control/log/curve_detect.log",
+                    std::ios::in | std::ios::out | std::ios::app);
+
 
     // Check if plan is up to date and contains enough segments
     if (plan_valid)
@@ -94,7 +97,15 @@ double SpeedController::calcCurveWeight(const double maxDist)
 
             // Calculate angle between current and previous vector
             // The input is bounded (clip) to avoid numerical instabilities
-            angle = abs(acos(clip((vx * vx_prev + vy * vy_prev) / (dist * dist_prev), 0.0, 1.0))*180/M_PI);
+            angle = fabs(acos(clip((vx * vx_prev + vy * vy_prev) / (dist * dist_prev), 0.0, 1.0))*180/M_PI);
+
+            // Logging
+            if (logfile.is_open()) {
+                logfile << "angle: " << angle
+                        << " dist: " << dist
+                        << " acc_angle: " << accumulatedAngle
+                        << " acc_dist: " << accumulatedDistance << std::endl;
+            }
 
             // Accumulate distance and angle
             accumulatedDistance += dist;
@@ -105,6 +116,7 @@ double SpeedController::calcCurveWeight(const double maxDist)
             vx_prev = vx;
             vy_prev = vy;
         }
+        logfile.close();
         ROS_INFO("\nangle: %.7lf distance: %.3lf", accumulatedAngle, accumulatedDistance);
     }
     else
