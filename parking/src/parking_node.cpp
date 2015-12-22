@@ -9,6 +9,7 @@
 
 using namespace std;
 
+/*
 #define MAX_DIST                0.40
 #define MIN_DIST                0.30
 #define NUM_MEAN_SAMPLES        10
@@ -25,7 +26,7 @@ using namespace std;
 #define BACKWARD_THRESHOLD_2    0.1
 
 #define LINEAR_SPEED            0.3
-
+*/
 
 typedef struct {
     float new_dist;
@@ -91,7 +92,8 @@ int main(int argc, char** argv)
     ROS_INFO("Init ros node...");
     ros::init(argc, argv, "parking_node");
 
-    ros::NodeHandle n;
+    // set node handle namespace
+    ros::NodeHandle n("parking");
 
     ROS_INFO("Add subscribers...");
     ros::Subscriber lsF_sub = n.subscribe<sensor_msgs::LaserScan>("/scan",10, processLaserScanF);
@@ -102,24 +104,49 @@ int main(int argc, char** argv)
     // tf listener for robot position:
     tf::TransformListener tf_listener;
 
-    // read params from YAML file
-    XmlRpc::XmlRpcValue topicList;
-    std::vector<std::string> topics;
 
-    if (n.getParam("topics", topicList))
-    {
-      std::map<std::string, XmlRpc::XmlRpcValue>::iterator i;
-      for (i = topicList.begin(); i != topicList.end(); i++)
-      {
-        std::string topic_name;
-        std::string topic_type;
+    // set standard parameters (rosparam only supports double)
+    double MAX_DIST =                0.40;
+    double MIN_DIST =                0.30;
+    double NUM_MEAN_SAMPLES =        10;
 
-        topic_name = i->first;
-        topic_type.assign(i->second["topic_type"]);
+    double MAX_GAP_DEPTH =           MAX_DIST;
+    double MIN_GAP_DEPTH =           MIN_DIST;
 
-        topics.push_back(topic_name);
-      }
-    }
+    double MIN_GAP_LENGTH =          0.4;
+    double MAX_GAP_LENGTH =          1.0;
+
+    double RANGE_THRESHOLD =         0.05;
+
+    double BACKWARD_THRESHOLD_1 =    0.2;
+    double BACKWARD_THRESHOLD_2 =    0.1;
+
+    double LINEAR_SPEED =            0.3;
+
+
+    // read params from param server
+    n.getParam("MAX_DIST", MAX_DIST);
+    n.getParam("MIN_DIST", MIN_DIST);
+
+    n.getParam("NUM_MEAN_SAMPLES", NUM_MEAN_SAMPLES);
+
+    n.getParam("MAX_GAP_DEPTH", MAX_GAP_DEPTH);
+    n.getParam("MIN_GAP_DEPTH", MIN_GAP_DEPTH);
+
+    n.getParam("MIN_GAP_LENGTH", MIN_GAP_LENGTH);
+    n.getParam("MAX_GAP_LENGTH", MAX_GAP_LENGTH);
+
+    n.getParam("RANGE_THRESHOLD", RANGE_THRESHOLD);
+
+    n.getParam("BACKWARD_THRESHOLD_1", BACKWARD_THRESHOLD_1);
+    n.getParam("BACKWARD_THRESHOLD_2", BACKWARD_THRESHOLD_2);
+
+    n.getParam("LINEAR_SPEED", LINEAR_SPEED);
+
+
+
+    // Default value version
+    //n.param<std::string>("default_param", default_param, "default_value");
 
     enum states {INIT,
                  FIRST_CORNER_START,
