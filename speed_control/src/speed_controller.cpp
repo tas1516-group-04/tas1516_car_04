@@ -7,8 +7,12 @@ SpeedController::SpeedController(ros::NodeHandle &nh, const tf::TransformListene
     transform_listener(listener)
 {
     plan_valid = false;
+    cmd_velocity = 0.0;
 
-    nh.param<int>("/speed_control_node/jump_segments", jump_segments, 5);
+    cmd_subscriber = node_handle.subscribe<geometry_msgs::Twist>("cmd_vel2", 1000, &SpeedController::cmdCallback, this);
+    cmd_publisher = node_handle.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+
+    node_handle.param<int>("/speed_control_node/jump_segments", jump_segments, 5);
 
 }
 
@@ -30,9 +34,19 @@ void SpeedController::planCallback(const nav_msgs::Path::ConstPtr &path)
     transformPath(current_path);
 }
 
+
+
 double SpeedController::calcSpeed()
 {
     return calcCurveWeight(3.0);
+}
+
+void SpeedController::cmdCallback(const geometry_msgs::Twist::ConstPtr &cmd_vel2)
+{
+    // Load velocity command from the speed controller
+    geometry_msgs::Twist cmd_vel = *cmd_vel2;
+    cmd_vel.linear.x = cmd_velocity;
+    cmd_publisher.publish(cmd_vel);
 }
 
 void SpeedController::transformPath(std::vector<geometry_msgs::PoseStamped> &path)

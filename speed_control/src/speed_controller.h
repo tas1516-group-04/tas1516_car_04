@@ -26,12 +26,18 @@ public:
 
 private:
     ros::NodeHandle& node_handle;
+    ros::Subscriber cmd_subscriber;
+    ros::Publisher cmd_publisher;
+    double cmd_velocity;
     bool plan_valid;
     const tf::TransformListener *transform_listener;
     std::vector<geometry_msgs::PoseStamped> current_path;
 
     // Parameter
     int jump_segments;
+
+    // Called when cmd_vel gets updated
+    void cmdCallback(const geometry_msgs::Twist::ConstPtr &);
 
     // Transform a path from map to base_link frame
     void transformPath(std::vector<geometry_msgs::PoseStamped> &);
