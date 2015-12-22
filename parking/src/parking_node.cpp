@@ -171,7 +171,7 @@ int main(int argc, char** argv)
 
     geometry_msgs::Twist vel_msg;
 
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(1000);
 
     int display_counter = 0;
 
