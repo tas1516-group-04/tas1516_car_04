@@ -45,19 +45,14 @@ int main(int argc, char** argv)
                 {
                     autonomous_control.control_servo.x = 1500;
                 }
-
                 cout << "Speed: " << autonomous_control.control_servo.x << endl;
-
                 autonomous_control.control_servo.y = autonomous_control.cmd_steeringAngle;
+                cout << "Steering Angle: " << autonomous_control.control_servo.y << endl;
             }
-
             autonomous_control.control_servo_pub_.publish(autonomous_control.control_servo);
-
         }
-
         ros::spinOnce();
         loop_rate.sleep();
-
     }
 
     return 0;

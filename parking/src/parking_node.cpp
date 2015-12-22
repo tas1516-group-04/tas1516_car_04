@@ -13,6 +13,10 @@ using namespace std;
 #define MIN_DIST                0.30
 #define NUM_MEAN_SAMPLES        10
 
+#define LATERAL_DIST_MIN        0.35    // for angular control --> parallel parking alignment
+#define LATERAL_DIST_MAX        0.38
+#define ANGULAR_SPEED           0.1
+
 #define MAX_GAP_DEPTH           MAX_DIST
 #define MIN_GAP_DEPTH           MIN_DIST
 
@@ -26,7 +30,7 @@ using namespace std;
 
 #define LINEAR_CONTROL_ON       1.0
 
-#define LINEAR_SPEED            0.3 * LINEAR_CONTROL_ON
+#define LINEAR_SPEED            0.45 * LINEAR_CONTROL_ON
 
 
 typedef struct {
@@ -86,6 +90,16 @@ void processLaserScanB(const sensor_msgs::LaserScan::ConstPtr& scan){
     Back.right_dist = scan->ranges[scan->ranges.size() - 1];
     // DEBUG
     //cout << "* Back:" << endl << "  left: " << Back.left_dist << " middle: " << Back.middle_dist << " right: " << Back.right_dist << endl;
+}
+
+float angularControl()
+{
+    if (Front.left_dist > LATERAL_DIST_MAX)
+        return ANGULAR_SPEED;
+    else if ((Front.left_dist < LATERAL_DIST_MIN))
+        return (- ANGULAR_SPEED);
+    else
+        return 0.00001; // return for neutral steering
 }
 
 int main(int argc, char** argv)
@@ -157,7 +171,7 @@ int main(int argc, char** argv)
             }
 
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = 0;
+            vel_msg.angular.z = angularControl();
             cmd_vel_pub.publish(vel_msg);
 
             // check if in a certain range next to parking wall
@@ -177,7 +191,7 @@ int main(int argc, char** argv)
         case FIRST_CORNER_START:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = Front.left_dist * STEERING_RATIO;   // TODO define steering ratio
+            vel_msg.angular.z = angularControl();
             cmd_vel_pub.publish(vel_msg);
 
             // check if in range to detect first corner start
@@ -195,7 +209,7 @@ int main(int argc, char** argv)
         case FIRST_CORNER_END:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = Front.diff_dist * STEERING_RATIO;   // TODO define steering ratio
+            vel_msg.angular.z = angularControl();
             cmd_vel_pub.publish(vel_msg);
 
             // check if in range to detect first corner end
@@ -213,7 +227,7 @@ int main(int argc, char** argv)
         case SECOND_CORNER_START:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = Front.diff_dist * STEERING_RATIO;   // TODO define steering ratio
+            vel_msg.angular.z = angularControl();
             cmd_vel_pub.publish(vel_msg);
 
             if (Back.left_dist >= MIN_GAP_DEPTH && Back.left_dist <= MAX_GAP_DEPTH) {
