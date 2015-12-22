@@ -7,9 +7,9 @@ SpeedController::SpeedController(ros::NodeHandle &nh, const tf::TransformListene
     transform_listener(listener)
 {
     plan_valid = false;
-
+    std::cout << jump_segments << std::endl;
     nh.param<int>("/speed_control_node/jump_segments", jump_segments, 5);
-
+    std::cout << jump_segments << std::endl;
 }
 
 // Callback for the NavfnROS/plan subscriber
