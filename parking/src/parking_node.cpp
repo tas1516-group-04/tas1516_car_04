@@ -24,9 +24,7 @@ using namespace std;
 #define BACKWARD_THRESHOLD_1    0.2
 #define BACKWARD_THRESHOLD_2    0.1
 
-#define LINEAR_CONTROL_ON       1.0
-
-#define LINEAR_SPEED            0.3 * LINEAR_CONTROL_ON
+#define LINEAR_SPEED            0.3
 
 
 typedef struct {
@@ -93,21 +91,35 @@ int main(int argc, char** argv)
     ROS_INFO("Init ros node...");
     ros::init(argc, argv, "parking_node");
 
-    ros::NodeHandle nF;
-    ros::NodeHandle nB;
-
-    ros::NodeHandle nVel;
+    ros::NodeHandle n;
 
     ROS_INFO("Add subscribers...");
-    ros::Subscriber lsF_sub = nF.subscribe<sensor_msgs::LaserScan>("/scan",10, processLaserScanF);
-    ros::Subscriber lsB_sub = nB.subscribe<sensor_msgs::LaserScan>("/scan_back",10, processLaserScanB);
+    ros::Subscriber lsF_sub = n.subscribe<sensor_msgs::LaserScan>("/scan",10, processLaserScanF);
+    ros::Subscriber lsB_sub = n.subscribe<sensor_msgs::LaserScan>("/scan_back",10, processLaserScanB);
 
-    ros::Publisher cmd_vel_pub = nVel.advertise<geometry_msgs::Twist>("cmd_vel", 1000);
+    ros::Publisher cmd_vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1000);
 
     // tf listener for robot position:
     tf::TransformListener tf_listener;
 
-    Features features;
+    // read params from YAML file
+    XmlRpc::XmlRpcValue topicList;
+    std::vector<std::string> topics;
+
+    if (n.getParam("topics", topicList))
+    {
+      std::map<std::string, XmlRpc::XmlRpcValue>::iterator i;
+      for (i = topicList.begin(); i != topicList.end(); i++)
+      {
+        std::string topic_name;
+        std::string topic_type;
+
+        topic_name = i->first;
+        topic_type.assign(i->second["topic_type"]);
+
+        topics.push_back(topic_name);
+      }
+    }
 
     enum states {INIT,
                  FIRST_CORNER_START,
