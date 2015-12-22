@@ -211,7 +211,7 @@ int main(int argc, char** argv)
         case FIRST_CORNER_START:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
+            //vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
             cmd_vel_pub.publish(vel_msg);
 
             // check if in range to detect first corner start
