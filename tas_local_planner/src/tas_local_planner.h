@@ -16,11 +16,6 @@ using std::string;
 #ifndef TAS_LOCAL_PLANNER_CPP
 #define TAS_LOCAL_PLANNER_CPP
 
-// distance between the front and back wheels
-#define WHEELBASE 0.3
-// car width
-#define CARWIDTH  0.5
-
 sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
 
 enum LaserObjectType {
@@ -51,6 +46,14 @@ public:
 
 private:
 
+    //parameters
+    float carwidth_;
+    float wheelbase_;
+    bool doObstacleAvoidance_;
+    int minTargetPoint_;
+    float steeringAngleParameter_;
+    float laserMaxDist_;
+
     //variables
     bool goalIsReached_;
     bool initialized_;
@@ -76,6 +79,9 @@ private:
     int makeDecision();
     void analyzeLaserData(float r);
     void tfRobotPose();
+    float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b);
+    bool checkForObject(float angle, float x, float y);
+    float calcAngle(float x, float y);
 
 };
 };
