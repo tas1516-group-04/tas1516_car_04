@@ -9,24 +9,6 @@
 
 using namespace std;
 
-/*
-#define MAX_DIST                0.40
-#define MIN_DIST                0.30
-#define NUM_MEAN_SAMPLES        10
-
-#define MAX_GAP_DEPTH           MAX_DIST
-#define MIN_GAP_DEPTH           MIN_DIST
-
-#define MIN_GAP_LENGTH          0.4
-#define MAX_GAP_LENGTH          1.0
-
-#define RANGE_THRESHOLD         0.05
-
-#define BACKWARD_THRESHOLD_1    0.2
-#define BACKWARD_THRESHOLD_2    0.1
-
-#define LINEAR_SPEED            0.3
-*/
 
 typedef struct {
     float new_dist;
@@ -110,8 +92,8 @@ int main(int argc, char** argv)
     double MIN_DIST =                0.30;
     double NUM_MEAN_SAMPLES =        10;
 
-    double MAX_GAP_DEPTH =           MAX_DIST;
-    double MIN_GAP_DEPTH =           MIN_DIST;
+    double MAX_GAP_DEPTH =           0.40;
+    double MIN_GAP_DEPTH =           0.30;
 
     double MIN_GAP_LENGTH =          0.4;
     double MAX_GAP_LENGTH =          1.0;
@@ -125,24 +107,27 @@ int main(int argc, char** argv)
 
 
     // read params from param server
-    n.getParam("MAX_DIST", MAX_DIST);
-    n.getParam("MIN_DIST", MIN_DIST);
+    ROS_INFO("Read 11 params from ros parameter server (1: successfull, 0: fail)... ");
 
-    n.getParam("NUM_MEAN_SAMPLES", NUM_MEAN_SAMPLES);
+    cout << n.getParam("MAX_DIST", MAX_DIST);
+    cout << n.getParam("MIN_DIST", MIN_DIST);
 
-    n.getParam("MAX_GAP_DEPTH", MAX_GAP_DEPTH);
-    n.getParam("MIN_GAP_DEPTH", MIN_GAP_DEPTH);
+    cout << n.getParam("NUM_MEAN_SAMPLES", NUM_MEAN_SAMPLES);
 
-    n.getParam("MIN_GAP_LENGTH", MIN_GAP_LENGTH);
-    n.getParam("MAX_GAP_LENGTH", MAX_GAP_LENGTH);
+    cout << n.getParam("MAX_GAP_DEPTH", MAX_GAP_DEPTH);
+    cout << n.getParam("MIN_GAP_DEPTH", MIN_GAP_DEPTH);
 
-    n.getParam("RANGE_THRESHOLD", RANGE_THRESHOLD);
+    cout << n.getParam("MIN_GAP_LENGTH", MIN_GAP_LENGTH);
+    cout << n.getParam("MAX_GAP_LENGTH", MAX_GAP_LENGTH);
 
-    n.getParam("BACKWARD_THRESHOLD_1", BACKWARD_THRESHOLD_1);
-    n.getParam("BACKWARD_THRESHOLD_2", BACKWARD_THRESHOLD_2);
+    cout << n.getParam("RANGE_THRESHOLD", RANGE_THRESHOLD);
 
-    n.getParam("LINEAR_SPEED", LINEAR_SPEED);
+    cout << n.getParam("BACKWARD_THRESHOLD_1", BACKWARD_THRESHOLD_1);
+    cout << n.getParam("BACKWARD_THRESHOLD_2", BACKWARD_THRESHOLD_2);
 
+    cout << n.getParam("LINEAR_SPEED", LINEAR_SPEED) << endl;
+
+    ROS_INFO("done");
 
 
     // Default value version

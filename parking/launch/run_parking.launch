@@ -17,6 +17,6 @@
   <!--node pkg = "parking" type="parking_node" name="parking_node" output="screen"/-->
 
 
-  <rosparam command="load" file="params.yaml" />
+  <rosparam ns="parking" command="load" file="$(find parking)/launch/params.yaml" />
 
 </launch>
