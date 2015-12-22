@@ -13,6 +13,8 @@ SpeedController::SpeedController(ros::NodeHandle &nh, const tf::TransformListene
     cmd_publisher = node_handle.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
     node_handle.param<int>("/speed_control_node/jump_segments", jump_segments, 5);
+    node_handle.param<double>("/speed_control_node/angle_min", angle_min, 0.0);
+    node_handle.param<double>("/speed_control_node/angle_max", angle_max, 90.0);
 }
 
 // Callback for the NavfnROS/plan subscriber
@@ -33,11 +35,12 @@ void SpeedController::planCallback(const nav_msgs::Path::ConstPtr &path)
     transformPath(current_path);
 }
 
-
-
-double SpeedController::calcSpeed()
+void SpeedController::calcSpeed()
 {
-    return calcCurveWeight(3.0);
+    double curveAngle = calcCurveWeight(3.0);
+    clip(curveAngle, angle_min, angle_max);
+    cmd_velocity = 1 - (curveAngle - angle_min) / angle_max;
+    std::cout << "velocity: " << cmd_velocity << std::endl;
 }
 
 void SpeedController::cmdCallback(const geometry_msgs::Twist::ConstPtr &cmd_vel2)
@@ -133,11 +136,11 @@ double SpeedController::calcCurveWeight(const double maxDist)
             vy_prev = vy;
         }
         logfile.close();
-        ROS_INFO("\nangle: %.7lf distance: %.3lf", accumulatedAngle, accumulatedDistance);
+        std::cout << std::setprecision(5) << "angle: " << accumulatedAngle << " distance: " << accumulatedDistance << std::endl;
     }
     else
     {
-        ROS_INFO("No valid path");
+        std::cout << "No valid path" << std::endl;
     }
 
     return accumulatedAngle;

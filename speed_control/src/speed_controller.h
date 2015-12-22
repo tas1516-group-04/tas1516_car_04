@@ -20,7 +20,7 @@ public:
     void planCallback(const nav_msgs::Path::ConstPtr &);
 
     // Return a cmd_vel value for the speed in x direction
-    double calcSpeed();
+    void calcSpeed();
 
 
 
@@ -35,6 +35,8 @@ private:
 
     // Parameter
     int jump_segments;
+    double angle_min;
+    double angle_max;
 
     // Called when cmd_vel gets updated
     void cmdCallback(const geometry_msgs::Twist::ConstPtr &);
