@@ -37,10 +37,17 @@ void SpeedController::planCallback(const nav_msgs::Path::ConstPtr &path)
 
 void SpeedController::calcSpeed()
 {
-    double curveAngle = calcCurveWeight(3.0);
-    clip(curveAngle, angle_min, angle_max);
-    cmd_velocity = 1 - (curveAngle - angle_min) / angle_max;
-    std::cout << "velocity: " << cmd_velocity << std::endl;
+    double curveAngle = calcCurveWeight(2.0);
+    curveAngle = clip(curveAngle, angle_min, angle_max);
+    if (plan_valid)
+    {
+    	cmd_velocity = 1 - (curveAngle - angle_min) / angle_max;
+    }
+    else
+    {
+	cmd_velocity = 0;
+    }
+    std::cout << "velocity: " << cmd_velocity << " angle: " << curveAngle << std::endl;
 }
 
 void SpeedController::cmdCallback(const geometry_msgs::Twist::ConstPtr &cmd_vel2)

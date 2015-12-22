@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     ros::Subscriber plan_subscriber = nh.subscribe("move_base_node/NavfnROS/plan", 10,
                                                 &SpeedController::planCallback, &sc);
 
-    ros::Rate loop_rate(5);
+    ros::Rate loop_rate(100);
     ROS_INFO("SpeedController running. Entering loop.\n");
     while (ros::ok())
     {
