@@ -90,7 +90,7 @@ int main(int argc, char** argv)
     ros::Subscriber lsF_sub = n.subscribe<sensor_msgs::LaserScan>("/scan",10, processLaserScanF);
     ros::Subscriber lsB_sub = n.subscribe<sensor_msgs::LaserScan>("/scan_back",10, processLaserScanB);
 
-    ros::Publisher cmd_vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1000);
+    ros::Publisher cmd_vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
 
     // tf listener for robot position:
     tf::TransformListener tf_listener;
@@ -195,7 +195,7 @@ int main(int argc, char** argv)
             cmd_vel_pub.publish(vel_msg);
 
             // check if in a certain range next to parking wall
-            if (Front.left_dist >= MIN_DIST && Front.left_dist <= MAX_DIST) {
+            if (Front.left_dist >= MIN_GAP_DEPTH && Front.left_dist <= MAX_GAP_DEPTH) {
                 ROS_INFO("y dist is in range for parking");
 
                 // set robot position in parking coordinate system
@@ -233,7 +233,7 @@ int main(int argc, char** argv)
             cmd_vel_pub.publish(vel_msg);
 
             // check if in range to detect first corner end
-            if (Front.left_dist <= MIN_GAP_DEPTH) {
+            if (Front.left_dist >= MAX_GAP_DEPTH) {
                 ROS_INFO("Front.left_dist is in range for first corner end");
 
                 // capture robot position now for first corner end
