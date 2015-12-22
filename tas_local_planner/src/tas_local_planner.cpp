@@ -92,17 +92,16 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                  (float) plan_[point].pose.orientation.w);
 
         //calc steering angle
-        float radius;
         float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y)*steeringAngleParameter_;
 
         /// obstacle avoidance
 
         // check if one laser point
-        analyzeLaserData(radius);
+        analyzeLaserData(2);
         bool objectInPath = false;
         for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
             // returns true if one laser point is in path
-            objectInPath = checkForObject(radius, it->position.x, it->position.y);
+            objectInPath = checkForObject(steerAngle, it->position.x, it->position.y);
             if(objectInPath) break;
         }
         // search for avoidance path
