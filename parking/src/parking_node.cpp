@@ -78,6 +78,12 @@ float angularControl(double min, double max, float angular_speed)
         return 0.00001; // return for neutral steering
 }
 
+void printLaserRanges()
+{
+    cout << "* Front:" << endl << "  left: " << Front.left_dist << " middle: " << Front.middle_dist << " right: " << Front.right_dist << endl;
+    cout << "* Back:" << endl << "  left: " << Back.left_dist << " middle: " << Back.middle_dist << " right: " << Back.right_dist << endl;
+}
+
 int main(int argc, char** argv)
 {
     ROS_INFO("Init ros node...");
@@ -177,10 +183,8 @@ int main(int argc, char** argv)
     while(ros::ok())
     {
         display_counter = 1;
-        if (display_counter%100 == 0) {
-            cout << "* Front:" << endl << "  left: " << Front.left_dist << " middle: " << Front.middle_dist << " right: " << Front.right_dist << endl;
-            cout << "* Back:" << endl << "  left: " << Back.left_dist << " middle: " << Back.middle_dist << " right: " << Back.right_dist << endl;
-        }
+        if (display_counter%100 == 0)
+            printLaserRanges();
 
         switch(state) {
 
@@ -195,8 +199,9 @@ int main(int argc, char** argv)
             cmd_vel_pub.publish(vel_msg);
 
             // check if in a certain range next to parking wall
-            if (Front.left_dist >= MIN_GAP_DEPTH && Front.left_dist <= MAX_GAP_DEPTH) {
-                ROS_INFO("y dist is in range for parking");
+            if (Front.left_dist >= MIN_DIST && Front.left_dist <= MAX_DIST) {
+                ROS_INFO("Front.left_dist is in range for parking");
+                cout << "Front.left_dist " << Front.left_dist << endl;
 
                 // set robot position in parking coordinate system
                 R.xpos = 0;
@@ -211,12 +216,13 @@ int main(int argc, char** argv)
         case FIRST_CORNER_START:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            //vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
+            vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
             cmd_vel_pub.publish(vel_msg);
 
             // check if in range to detect first corner start
             if (Front.left_dist >= MIN_GAP_DEPTH && Front.left_dist <= MAX_GAP_DEPTH) {
-                ROS_INFO("dist_diff is in range for first corner detection");
+                ROS_INFO("Front.left_dist is in range for first corner detection");
+                cout << "Front.left_dist" << Front.left_dist << endl;
 
                 // capture corner position now for first corner start
                 C.first.start.xpos = R.xpos;
@@ -229,12 +235,13 @@ int main(int argc, char** argv)
         case FIRST_CORNER_END:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
+            // vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
             cmd_vel_pub.publish(vel_msg);
 
             // check if in range to detect first corner end
             if (Front.left_dist >= MAX_GAP_DEPTH) {
                 ROS_INFO("Front.left_dist is in range for first corner end");
+                cout << "Front.left_dist" << Front.left_dist << endl;
 
                 // capture robot position now for first corner end
                 C.first.end.xpos = R.xpos;
@@ -250,31 +257,39 @@ int main(int argc, char** argv)
             vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
             cmd_vel_pub.publish(vel_msg);
 
-            if (Back.left_dist >= MIN_GAP_DEPTH && Back.left_dist <= MAX_GAP_DEPTH) {
-                ROS_INFO("Back.left_dist is in range for second corner start");
+            if (Front.left_dist >= MIN_GAP_DEPTH && Front.left_dist <= MAX_GAP_DEPTH) {
+                ROS_INFO("Front.left_dist is in range for second corner start");
+                cout << "Front.left_dist" << Front.left_dist << endl;
 
                 // capture robot position now for second corner start
                 C.second.start.xpos = R.xpos;
                 C.second.start.ypos = Front.new_dist;
-                state = START_PARKING;
-                ROS_INFO("state: START_PARKING");
-                ROS_INFO("Driving backwards with min steering angle...");
+
+                state = SECOND_CORNER_END;
+                ROS_INFO("state: SECOND_CORNER_END");
             }
             break;
-        /*
+
         case SECOND_CORNER_END:
-            if (Front.diff_dist >= RANGE_THRESHOLD) {
-                ROS_INFO("dist_diff is in range for second corner end");
+            // steer robot
+            vel_msg.linear.x = LINEAR_SPEED;
+            // vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
+            cmd_vel_pub.publish(vel_msg);
+
+            if (Back.left_dist <= MAX_GAP_DEPTH) {
+                ROS_INFO("Back.left_dist is in range for second corner end");
+                cout << "Back.left_dist" << Back.left_dist << endl;
 
                 // capture robot position now for second corner end
                 C.second.end.xpos = R.xpos;
                 C.second.end.ypos = Front.new_dist;
 
                 state = START_PARKING;
+                ROS_INFO("state: START_PARKING");
+                ROS_INFO("Driving backwards with min steering angle...");
             }
             break;
 
-        */
         case START_PARKING:
 
             vel_msg.linear.x = - LINEAR_SPEED;
@@ -283,6 +298,9 @@ int main(int argc, char** argv)
 
             // check if first backward distance reached
             if (Back.middle_dist <= BACKWARD_THRESHOLD_1) {
+                ROS_INFO("Back.middle_dist is in range for steering reversal point");
+                cout << "Back.middle_dist" << Back.middle_dist << endl;
+
                 state = PARKING_STATE_1;
                 ROS_INFO("state: PARKING_STATE_1");
                 ROS_INFO("Steering reversal point reached!");
@@ -299,6 +317,9 @@ int main(int argc, char** argv)
 
             // check if first backward distance reached
             if (Back.middle_dist <= BACKWARD_THRESHOLD_2) {
+                ROS_INFO("Back.middle_dist is in range for backward minimum position");
+                cout << "Back.middle_dist" << Back.middle_dist << endl;
+
                 state = PARKING_STATE_2;
                 ROS_INFO("state:PARKING_STATE_2");
             }
@@ -315,6 +336,9 @@ int main(int argc, char** argv)
 
             // TODO add ray component for middle ray here
             if (Front.middle_dist >= 0.2) {
+                ROS_INFO("Front.middle_dist is large enough to do a correction step");
+                cout << "Front.middle_dist" << Front.middle_dist << endl;
+
                 vel_msg.linear.x = LINEAR_SPEED;
                 vel_msg.angular.z = 0;
                 cmd_vel_pub.publish(vel_msg);
@@ -322,6 +346,9 @@ int main(int argc, char** argv)
 
             // check if forward min distance reached
             if (Front.middle_dist <= 0.2) {
+                ROS_INFO("Front.middle_dist is to small for correction step");
+                cout << "Front.middle_dist" << Front.middle_dist << endl;
+
                 state = END_PARKING;
                 ROS_INFO("state: END_PARKING");
             }
@@ -330,7 +357,7 @@ int main(int argc, char** argv)
 
         case END_PARKING:
             if (display_once) {
-                ROS_INFO("Parking Finished. Setting speed to zero!");
+                ROS_INFO("Parking Finished. Setting speed to zero... ");
                 display_once = false;
             }
 
@@ -352,9 +379,6 @@ int main(int argc, char** argv)
         ros::spinOnce();
         loop_rate.sleep();
     }
-
-
-
 
     return 0;
 }
