@@ -6,6 +6,7 @@
 #include "../../parking_control/src/control/control.h"      // for speed defines ...
 #include <tf/transform_listener.h>
 #include <iostream>
+#include <sensor_msgs/Imu.h>
 
 using namespace std;
 
@@ -21,6 +22,7 @@ typedef struct {
 typedef struct {
     float xpos;
     float ypos;
+    float yaw;
 } robot_t;
 
 typedef struct {
@@ -66,6 +68,19 @@ void processLaserScanB(const sensor_msgs::LaserScan::ConstPtr& scan){
     Back.right_dist = scan->ranges[scan->ranges.size() - 1];
     // DEBUG
     //cout << "* Back:" << endl << "  left: " << Back.left_dist << " middle: " << Back.middle_dist << " right: " << Back.right_dist << endl;
+}
+
+double roll, pitch, yaw;
+
+void processImu(const sensor_msgs::Imu::ConstPtr& imu)
+{
+    //geometry_msgs::Twist vel;
+    tf::Quaternion bq(imu->orientation.x, imu->orientation.y, imu->orientation.z, imu->orientation.w);
+    // double roll, pitch, yaw;
+    tf::Matrix3x3 (bq).getRPY(roll, pitch, yaw);
+    // imu_vel.angular.z = roll;
+    // imu_vel.linear.x = pitch;
+    // pub.publish(vel)
 }
 
 float angularControl(double min, double max, float angular_speed)
@@ -121,6 +136,8 @@ int main(int argc, char** argv)
     double LINEAR_SPEED =            0.3;
     double ANGULAR_SPEED =           0.1;
 
+    double YAW_THRESHOLD =           0.4;
+
 
     // read params from param server
     ROS_INFO("Read params from ros parameter server (1: successfull, 0: fail)... ");
@@ -142,8 +159,11 @@ int main(int argc, char** argv)
     cout << n.getParam("BACKWARD_THRESHOLD_2", BACKWARD_THRESHOLD_2);
 
     cout << n.getParam("LINEAR_SPEED", LINEAR_SPEED);
-    cout << n.getParam("ANGULAR_SPEED", ANGULAR_SPEED) << endl;
+    cout << n.getParam("ANGULAR_SPEED", ANGULAR_SPEED);
 
+    cout << n.getParam("YAW_THRESHOLD", YAW_THRESHOLD);
+
+    cout << endl;
     ROS_INFO("done");
 
     // Default value version
@@ -247,6 +267,10 @@ int main(int argc, char** argv)
                 C.first.end.xpos = R.xpos;
                 C.first.end.ypos = Front.new_dist;
 
+                // capture imu yaw
+                R.yaw = yaw;
+
+
                 state = SECOND_CORNER_START;
                 ROS_INFO("state: SECOND_CORNER_START");
             }
@@ -297,6 +321,12 @@ int main(int argc, char** argv)
             cmd_vel_pub.publish(vel_msg);
 
             // check if first backward distance reached
+            // todo implement yaw support
+            if (abs((yaw - R.yaw)) >= YAW_THRESHOLD) {
+                ROS_INFO("Reached IMU YAW_THRESHOLD");
+                cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
+            }
+
             if (Back.middle_dist <= BACKWARD_THRESHOLD_1) {
                 ROS_INFO("Back.middle_dist is in range for steering reversal point");
                 cout << "Back.middle_dist" << Back.middle_dist << endl;
