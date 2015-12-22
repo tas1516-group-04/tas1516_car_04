@@ -126,12 +126,12 @@ double SpeedController::calcCurveWeight(const double maxDist)
             angle = fabs(acos(clip((vx * vx_prev + vy * vy_prev) / (dist * dist_prev), 0.0, 1.0))*180/M_PI);
 
             // Logging
-            if (logfile.is_open()) {
-                logfile << "angle: " << angle
-                        << " dist: " << dist
-                        << " acc_angle: " << accumulatedAngle
-                        << " acc_dist: " << accumulatedDistance << std::endl;
-            }
+//            if (logfile.is_open()) {
+//                logfile << "angle: " << angle
+//                        << " dist: " << dist
+//                        << " acc_angle: " << accumulatedAngle
+//                        << " acc_dist: " << accumulatedDistance << std::endl;
+//            }
 
             // Accumulate distance and angle
             accumulatedDistance += dist;
