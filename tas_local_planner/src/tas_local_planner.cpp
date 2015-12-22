@@ -34,12 +34,14 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         goalIsReached_ = false;
 
         //parameters
-        nodeHandle_.param<float>("car_width", carwidth_, 0.7);
-        nodeHandle_.param<float>("wheelbase", wheelbase_, 0.3);
-        nodeHandle_.param<bool>("obstacle_avoidance", doObstacleAvoidance_, 0);
-        nodeHandle_.param<int>("min_target_point", minTargetPoint_, 50);
-        nodeHandle_.param<float>("steering_angle_parameter", steeringAngleParameter_, 0.6);
-        nodeHandle_.param<float>("laser_max_dist", laserMaxDist_, 2);
+        nodeHandle_.param<double>("/move_base_node/car_width", carwidth_, 0.7);
+        nodeHandle_.param<double>("/move_base_node/wheelbase", wheelbase_, 0.3);
+        nodeHandle_.param<bool>("/move_base_node/obstacle_avoidance", doObstacleAvoidance_, false);
+        nodeHandle_.param<int>("/move_base_node/min_target_point", minTargetPoint_, 50);
+        nodeHandle_.param<double>("/move_base_node/steering_angle_parameter", steeringAngleParameter_, 0.6);
+        nodeHandle_.param<double>("/move_base_node/laser_max_dist", laserMaxDist_, 2);
+        if(doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance active!");
+        if(!doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance inactive!");
 
         //debug file
         debugFile_.open("debug.txt");
@@ -92,12 +94,12 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                  (float) plan_[point].pose.orientation.w);
 
         //calc steering angle
-        float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y)*steeringAngleParameter_;
+        float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
 
         /// obstacle avoidance
 
         // check if one laser point
-        analyzeLaserData(2);
+        analyzeLaserData(steerAngle);
         bool objectInPath = false;
         for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
             // returns true if one laser point is in path
@@ -122,24 +124,24 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 }
                 // decide what to do
                 if(!objectLeft) {
-                    cmd_vel.angular.z = angleInc;
-                    ROS_INFO("TLP: Alternative: Right turn!");
-                    return false;
+                    cmd_vel.angular.z = angleInc*steeringAngleParameter_;
+                    ROS_INFO("TLP: Alternative: Left turn!");
+                    break;
                 }
                 if(!objectRight) {
-                    cmd_vel.angular.z = angleDec;
-                    ROS_INFO("TLP: Alternative: Left turn!");
-                    return false;
+                    cmd_vel.angular.z = angleDec*steeringAngleParameter_;
+                    ROS_INFO("TLP: Alternative: Right turn!");
+                    break;
                 }
                 if(helper == 100) {
                     ROS_INFO("TLP: No alternative found!");
-                    return false;
+                    break;
                 }
                 helper++;
             }
             //cmd_vel.angular.z = steerAngle*0.6; //remove!
         } else {
-            cmd_vel.angular.z = steerAngle;
+            cmd_vel.angular.z = steerAngle*steeringAngleParameter_;
         }
     }
     // emergency stop
@@ -175,9 +177,10 @@ bool LocalPlanner::isGoalReached() {
     return goalIsReached_;
 }
 
-void LocalPlanner::analyzeLaserData(float r)
+void LocalPlanner::analyzeLaserData(float angle)
 {
     //transform to vector form
+    float r = abs(wheelbase_/tan(angle));
     laserDataTf_.clear();
     int numberLaserPoints = (int) ( (abs(tlpLaserScan->angle_min) + abs(tlpLaserScan->angle_max))/tlpLaserScan->angle_increment);
     for(int i = 100; i < numberLaserPoints-100; i++) {
