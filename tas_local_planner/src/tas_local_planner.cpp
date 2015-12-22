@@ -86,13 +86,13 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             point ++;
         }
         // debug
-        ROS_INFO("TLP: TPoint [%i]  x: %f y: %f z: %f w: %f",
+        /*ROS_INFO("TLP: TPoint [%i]  x: %f y: %f z: %f w: %f",
                  point,
                  (float) plan_[point].pose.position.x,
                  (float) plan_[point].pose.position.y,
                  (float) plan_[point].pose.orientation.z,
                  (float) plan_[point].pose.orientation.w);
-
+        */
         //calc steering angle
         float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
 
@@ -112,12 +112,13 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             ROS_INFO("TLP: Object in path!");
 
             int helper = 1;
+            steerAngle = 0; //for testing
             while(true) {
                 bool objectLeft = true;
                 bool objectRight = true;
 
-                float angleInc =  steerAngle + helper*0.01;
-                float angleDec =  steerAngle - helper*0.01;
+                float angleInc =  steerAngle*steeringAngleParameter_ + helper*0.01;
+                float angleDec =  steerAngle*steeringAngleParameter_ - helper*0.01;
                 for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
                     objectLeft  = checkForObject(angleInc, it->position.x, it->position.y);
                     objectRight = checkForObject(angleDec, it->position.x, it->position.y);
@@ -125,12 +126,12 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 // decide what to do
                 if(!objectLeft) {
                     cmd_vel.angular.z = angleInc*steeringAngleParameter_;
-                    ROS_INFO("TLP: Alternative: Left turn!");
+                    ROS_INFO("TLP: Alternative: Left turn! Z: %f", (float) cmd_vel.angular.z);
                     break;
                 }
                 if(!objectRight) {
                     cmd_vel.angular.z = angleDec*steeringAngleParameter_;
-                    ROS_INFO("TLP: Alternative: Right turn!");
+                    ROS_INFO("TLP: Alternative: Right turn! Z: %f",(float) cmd_vel.angular.z);
                     break;
                 }
                 if(helper == 100) {
@@ -142,9 +143,12 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             //cmd_vel.angular.z = steerAngle*0.6; //remove!
         } else {
             cmd_vel.angular.z = steerAngle*steeringAngleParameter_;
+            cmd_vel.linear.x = 0.2;
         }
     }
+    return true;
     // emergency stop
+    /*
     bool stopCar = false;
     for(int i = 0; i < 640; i++) {
         //if one front laser scan distance < 0.5 turn off the engine
@@ -158,9 +162,10 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         return true;
     } else {
         //cmd_vel.linear.x = 1.1 - (cmd_vel.angular.z*M_PI)/4;
-        cmd_vel.linear.x =0.2;
+        cmd_vel.linear.x = 0.2;
 	      return true;
     }
+    */
     // ---
 }
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
@@ -185,7 +190,7 @@ void LocalPlanner::analyzeLaserData(float angle)
     int numberLaserPoints = (int) ( (abs(tlpLaserScan->angle_min) + abs(tlpLaserScan->angle_max))/tlpLaserScan->angle_increment);
     for(int i = 100; i < numberLaserPoints-100; i++) {
         //max distance
-        if(tlpLaserScan->ranges[i] < sqrt(2)*r && tlpLaserScan->ranges[i] < laserMaxDist_) {
+        if(tlpLaserScan->ranges[i] < r && tlpLaserScan->ranges[i] < laserMaxDist_) {
             geometry_msgs::Pose newLaserPoint;
             newLaserPoint.position.x = cos(tlpLaserScan->angle_min + tlpLaserScan->angle_increment*i)*tlpLaserScan->ranges[i];
             newLaserPoint.position.y = sin(tlpLaserScan->angle_min + tlpLaserScan->angle_increment*i)*tlpLaserScan->ranges[i];
