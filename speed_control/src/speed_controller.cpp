@@ -73,20 +73,21 @@ double SpeedController::calcCurveWeight(const double maxDist)
     // Check if plan is up to date and contains enough segments
     if (plan_valid)
     {
+        const int jump_segments = 10;
         // Initialize with the first two poses so the iterative algorithm works
-        double vx = 0.0, vx_prev = current_path[1].pose.position.x - current_path[0].pose.position.x;
-        double vy = 0.0, vy_prev = current_path[1].pose.position.y - current_path[0].pose.position.y;
+        double vx = 0.0, vx_prev = current_path[jump_segments].pose.position.x - current_path[0].pose.position.x;
+        double vy = 0.0, vy_prev = current_path[jump_segments].pose.position.y - current_path[0].pose.position.y;
         double dist = 0.0, dist_prev = calcDistance(vx_prev, vy_prev);
         double angle = 0.0;
         // Iterate over all poses and accumulate the angle between the segments (vectors)
         // Stop when distance reaches max or end of vector
         // Leave out last 10 segments because of instabilisties <<<<< !!!!!!
         // Jump 5 segments at a time to smooth jumps <<<<<< !!!!!!
-        for (int i = 1; i < current_path.size()-10 && accumulatedDistance < maxDist; i += 5)
+        for (int i = jump_segments; i < current_path.size()-10 && accumulatedDistance < maxDist; i += jump_segments)
         {
             // Calculate current vector translated to the origin
-            vx = current_path[i].pose.position.x - current_path[i-1].pose.position.x;
-            vy = current_path[i].pose.position.y - current_path[i-1].pose.position.y;
+            vx = current_path[i].pose.position.x - current_path[i-jump_segments].pose.position.x;
+            vy = current_path[i].pose.position.y - current_path[i-jump_segments].pose.position.y;
 
             // Calculate length of the current vector
             dist = calcDistance(vx, vy);
@@ -104,8 +105,13 @@ double SpeedController::calcCurveWeight(const double maxDist)
             vx_prev = vx;
             vy_prev = vy;
         }
+        ROS_INFO("\nangle: %.7lf distance: %.3lf", accumulatedAngle, accumulatedDistance);
     }
-    ROS_INFO("\nangle: %.7lf distance: %.3lf", accumulatedAngle, accumulatedDistance);
+    else
+    {
+        ROS_INFO("No valid path");
+    }
+
     return accumulatedAngle;
 }
 
