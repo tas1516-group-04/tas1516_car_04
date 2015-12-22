@@ -11,7 +11,7 @@
 #include <iostream>
 #include <fstream>
 
-using std::string;
+using namespace std;
 
 #ifndef TAS_LOCAL_PLANNER_CPP
 #define TAS_LOCAL_PLANNER_CPP
@@ -47,12 +47,12 @@ public:
 private:
 
     //parameters
-    float carwidth_;
-    float wheelbase_;
+    double carwidth_;
+    double wheelbase_;
     bool doObstacleAvoidance_;
     int minTargetPoint_;
-    float steeringAngleParameter_;
-    float laserMaxDist_;
+    double steeringAngleParameter_;
+    double laserMaxDist_;
 
     //variables
     bool goalIsReached_;
@@ -77,7 +77,7 @@ private:
     // functions
     //void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
     int makeDecision();
-    void analyzeLaserData(float r);
+    void analyzeLaserData(float angle);
     void tfRobotPose();
     float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b);
     bool checkForObject(float angle, float x, float y);
