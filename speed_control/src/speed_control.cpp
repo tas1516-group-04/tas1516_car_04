@@ -34,11 +34,11 @@ using namespace std;
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "curve_detect");
-    ros::NodeHandle n;
+    ros::NodeHandle nh;
 
     const tf::TransformListener tf_listener;
-    SpeedController sc(&tf_listener);
-    ros::Subscriber plan_subscriber = n.subscribe("move_base_node/NavfnROS/plan", 10,
+    SpeedController sc(nh, &tf_listener);
+    ros::Subscriber plan_subscriber = nh.subscribe("move_base_node/NavfnROS/plan", 10,
                                                 &SpeedController::planCallback, &sc);
 
     ros::Rate loop_rate(5);

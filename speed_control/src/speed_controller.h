@@ -14,7 +14,7 @@
 
 class SpeedController {
 public:
-    SpeedController(const tf::TransformListener *);    
+    SpeedController(ros::NodeHandle &nh, const tf::TransformListener *);
 
     // Called when a new global plan is published
     void planCallback(const nav_msgs::Path::ConstPtr &);
@@ -25,9 +25,13 @@ public:
 
 
 private:
+    ros::NodeHandle& node_handle;
     bool plan_valid;
     const tf::TransformListener *transform_listener;
     std::vector<geometry_msgs::PoseStamped> current_path;
+
+    // Parameter
+    int jump_segments;
 
     // Transform a path from map to base_link frame
     void transformPath(std::vector<geometry_msgs::PoseStamped> &);

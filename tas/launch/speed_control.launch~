@@ -1,0 +1,5 @@
+<launch> 
+  <node pkg="speed_control" type="speed_control" name="speed_control_node" output="screen">
+    <rosparam file="$(find tas)/launch/config/speed_control/speed_control.yaml" command="load" />
+  </node>
+</launch>

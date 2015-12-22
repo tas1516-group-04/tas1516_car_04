@@ -2,10 +2,14 @@
 
 // Default constructor for the SpeedController
 // Adds listener to the tf topic. Initial plan is null
-SpeedController::SpeedController(const tf::TransformListener *listener)
+SpeedController::SpeedController(ros::NodeHandle &nh, const tf::TransformListener *listener) :
+    node_handle(nh),
+    transform_listener(listener)
 {
-    transform_listener = listener;
     plan_valid = false;
+
+    nh.param<int>("/speed_control_node/jump_segments", jump_segments, 5);
+
 }
 
 // Callback for the NavfnROS/plan subscriber
@@ -15,7 +19,7 @@ void SpeedController::planCallback(const nav_msgs::Path::ConstPtr &path)
     // Assume valid plan
     plan_valid = true;
     // Need at least some elements in path
-    if (path->poses.size() < 12)
+    if (path->poses.size() < jump_segments+15)
     {
         plan_valid = false;
         return;
@@ -76,7 +80,6 @@ double SpeedController::calcCurveWeight(const double maxDist)
     // Check if plan is up to date and contains enough segments
     if (plan_valid)
     {
-        const int jump_segments = 10;
         // Initialize with the first two poses so the iterative algorithm works
         double vx = 0.0, vx_prev = current_path[jump_segments].pose.position.x - current_path[0].pose.position.x;
         double vy = 0.0, vy_prev = current_path[jump_segments].pose.position.y - current_path[0].pose.position.y;
