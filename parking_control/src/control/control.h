@@ -17,9 +17,6 @@
 #define STEERING_RATIO                  0.1
 #define MAX_STEERING                    10.0
 
-#define SPEED_RATIO                     50.0
-#define SERVO_PARKING_SPEED_FORWARD     1500 + PARKING_SPEED * 50.0
-#define SERVO_PARKING_SPEED_BACKWARD    1500 - PARKING_SPEED * 50.0
 
 class control
 {

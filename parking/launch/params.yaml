@@ -1,22 +1,41 @@
+# Define parking parameters
+# no zeros as values allowed!
+
+# Front left laser scan track
 MAX_DIST: 0.65
 MIN_DIST: 0.64
 
 NUM_MEAN_SAMPLES: 10
 
+# Left laser scan range for box detection
 MAX_GAP_DEPTH: 0.38
 MIN_GAP_DEPTH: 0.20
 
+# not used now
 MIN_GAP_LENGTH: 0.5
 MAX_GAP_LENGTH: 1.0
 
+# not used now
 RANGE_THRESHOLD: 0.05
 
+# Front middle laser scan
+FORWARD_THRESHOLD_1: 0.2
+FORWARD_THRESHOLD_2: 0.25
+
+# Back middle laser scan
 BACKWARD_THRESHOLD_1: 0.8
 BACKWARD_THRESHOLD_2: 0.15
 
+# parking speeds (positive values)
 LINEAR_SPEED: 0.45
 ANGULAR_SPEED: 0.25
 
+# backward speeds (positive values)
+BACKWARD_SPEED_1: 1.0
+BACKWARD_SPEED_2: 0.2
+
+# threshold for IMU supported parking
 YAW_THRESHOLD: 0.4
 
+# Steering angle for first parking state (positive values, when driving backwards)
 STEERING_FIRST: 0.6

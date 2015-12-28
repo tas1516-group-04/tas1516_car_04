@@ -17,6 +17,7 @@ typedef struct {
     float left_dist;
     float right_dist;
     float middle_dist;
+    float half_left_dist;
 } dist_t;
 
 typedef struct {
@@ -57,6 +58,7 @@ void processLaserScanF(const sensor_msgs::LaserScan::ConstPtr& scan){
     Front.right_dist = scan->ranges[0];
     Front.middle_dist = scan->ranges[scan->ranges.size() / 2];
     Front.left_dist = scan->ranges[scan->ranges.size() - 1];
+    Front.half_left_dist = scan->ranges[scan->ranges.size() - ((scan->ranges.size() * 3) / 8)];
     // DEBUG
     //cout << "* Front:" << endl << "  left: " << Front.left_dist << " middle: " << Front.middle_dist << " right: " << Front.right_dist << endl;
 }
@@ -66,10 +68,12 @@ void processLaserScanB(const sensor_msgs::LaserScan::ConstPtr& scan){
     Back.left_dist = scan->ranges[0];
     Back.middle_dist = scan->ranges[scan->ranges.size() / 2];
     Back.right_dist = scan->ranges[scan->ranges.size() - 1];
+    Back.half_left_dist = scan->ranges[ (scan->ranges.size() * 3) / 8 ];
     // DEBUG
     //cout << "* Back:" << endl << "  left: " << Back.left_dist << " middle: " << Back.middle_dist << " right: " << Back.right_dist << endl;
 }
 
+// global IMU orientations
 double roll, pitch, yaw;
 
 void processImu(const sensor_msgs::Imu::ConstPtr& imu)
@@ -96,6 +100,14 @@ float angularControl(double min, double max, float angular_speed)
     
 }
 
+// P controller for angular control
+float angularControlP (double min, double max, float angular_speed)
+{
+    const float P = 10;     // controller gain
+    return angular_speed * P * (Front.left_dist - ((min+max) / 2));
+}
+
+
 void printLaserRanges()
 {
     cout << "* Front:" << endl << "  left: " << Front.left_dist << " middle: " << Front.middle_dist << " right: " << Front.right_dist << endl;
@@ -117,64 +129,70 @@ int main(int argc, char** argv)
     ros::Publisher cmd_vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
 
     // tf listener for robot position:
-    tf::TransformListener tf_listener;
+    // tf::TransformListener tf_listener;
 
+    double MAX_DIST,
+            MIN_DIST,
+            NUM_MEAN_SAMPLES,
+            MAX_GAP_DEPTH,
+            MIN_GAP_DEPTH,
+            MAX_GAP_LENGTH,
+            MIN_GAP_LENGTH,
+            RANGE_THRESHOLD,
+            FORWARD_THRESHOLD_1,
+            FORWARD_THRESHOLD_2,
+            BACKWARD_THRESHOLD_1,
+            BACKWARD_THRESHOLD_2,
+            LINEAR_SPEED,
+            ANGULAR_SPEED,
+            YAW_THRESHOLD,
+            STEERING_FIRST,
+            BACKWARD_SPEED_1,
+            BACKWARD_SPEED_2;
 
-    // set standard parameters (rosparam only supports double)
-    double MAX_DIST =                0.40;
-    double MIN_DIST =                0.30;
-    double NUM_MEAN_SAMPLES =        10;
+    ROS_INFO("Parsing parameters...");
 
-    double MAX_GAP_DEPTH =           1.0;
-    double MIN_GAP_DEPTH =           0.6;
+    n.param<double>("MAX_DIST", MAX_DIST, 0.0);
+    n.param<double>("MIN_DIST", MIN_DIST, 0.0);
+    n.param<double>("NUM_MEAN_SAMPLES", NUM_MEAN_SAMPLES, 0.0);
+    n.param<double>("MAX_GAP_DEPTH", MAX_GAP_DEPTH, 0.0);
+    n.param<double>("MIN_GAP_DEPTH", MIN_GAP_DEPTH, 0.0);
+    n.param<double>("MAX_GAP_LENGTH", MAX_GAP_LENGTH, 0.0);
+    n.param<double>("MIN_GAP_LENGTH", MIN_GAP_LENGTH, 0.0);
+    n.param<double>("RANGE_THRESHOLD", RANGE_THRESHOLD, 0.0);
+    n.param<double>("FORWARD_THRESHOLD_1", FORWARD_THRESHOLD_1, 0.0);
+    n.param<double>("FORWARD_THRESHOLD_2", FORWARD_THRESHOLD_2, 0.0);
+    n.param<double>("BACKWARD_THRESHOLD_1", BACKWARD_THRESHOLD_1, 0.0);
+    n.param<double>("BACKWARD_THRESHOLD_2", BACKWARD_THRESHOLD_2, 0.0);
+    n.param<double>("LINEAR_SPEED", LINEAR_SPEED, 0.0);
+    n.param<double>("ANGULAR_SPEED", ANGULAR_SPEED, 0.0);
+    n.param<double>("YAW_THRESHOLD", YAW_THRESHOLD, 0.0);
+    n.param<double>("STEERING_FIRST", STEERING_FIRST, 0.0);
+    n.param<double>("BACKWARD_SPEED_1", BACKWARD_SPEED_1, 0.0);
+    n.param<double>("BACKWARD_SPEED_2", BACKWARD_SPEED_2, 0.0);
 
-    double MIN_GAP_LENGTH =          0.4;
-    double MAX_GAP_LENGTH =          1.0;
-
-    double RANGE_THRESHOLD =         0.05;
-
-    double BACKWARD_THRESHOLD_1 =    0.2;
-    double BACKWARD_THRESHOLD_2 =    0.1;
-
-    double LINEAR_SPEED =            0.3;
-    double ANGULAR_SPEED =           0.1;
-
-    double YAW_THRESHOLD =           0.4;
-
-    double STEERING_FIRST =	     0.6;
-
-
-    // read params from param server
-    ROS_INFO("Read params from ros parameter server (1: successfull, 0: fail)... ");
-
-    cout << n.getParam("MAX_DIST", MAX_DIST);
-    cout << n.getParam("MIN_DIST", MIN_DIST);
-
-    cout << n.getParam("NUM_MEAN_SAMPLES", NUM_MEAN_SAMPLES);
-
-    cout << n.getParam("MAX_GAP_DEPTH", MAX_GAP_DEPTH);
-    cout << n.getParam("MIN_GAP_DEPTH", MIN_GAP_DEPTH);
-
-    cout << n.getParam("MIN_GAP_LENGTH", MIN_GAP_LENGTH);
-    cout << n.getParam("MAX_GAP_LENGTH", MAX_GAP_LENGTH);
-
-    cout << n.getParam("RANGE_THRESHOLD", RANGE_THRESHOLD);
-
-    cout << n.getParam("BACKWARD_THRESHOLD_1", BACKWARD_THRESHOLD_1);
-    cout << n.getParam("BACKWARD_THRESHOLD_2", BACKWARD_THRESHOLD_2);
-
-    cout << n.getParam("LINEAR_SPEED", LINEAR_SPEED);
-    cout << n.getParam("ANGULAR_SPEED", ANGULAR_SPEED);
-
-    cout << n.getParam("YAW_THRESHOLD", YAW_THRESHOLD);
-    
-    cout << n.getParam("STEERING_FIRST", STEERING_FIRST);
-
-    cout << endl;
+    if (!(MAX_DIST &&
+          MIN_DIST &&
+          NUM_MEAN_SAMPLES &&
+          MAX_GAP_DEPTH &&
+          MIN_GAP_DEPTH &&
+          MAX_GAP_LENGTH &&
+          MIN_GAP_LENGTH &&
+          RANGE_THRESHOLD &&
+          FORWARD_THRESHOLD_1 &&
+          FORWARD_THRESHOLD_2 &&
+          BACKWARD_THRESHOLD_1 &&
+          BACKWARD_THRESHOLD_2 &&
+          LINEAR_SPEED &&
+          ANGULAR_SPEED &&
+          YAW_THRESHOLD &&
+          STEERING_FIRST &&
+          BACKWARD_SPEED_1 &&
+          BACKWARD_SPEED_2) ) {
+        ROS_ERROR("Could not find all parameters from the server. Is \"run_parking.launch\" already launched?");
+        exit(EXIT_FAILURE);
+    }
     ROS_INFO("done");
-
-    // Default value version
-    //n.param<std::string>("default_param", default_param, "default_value");
 
     enum states {INIT,
                  FIRST_CORNER_START,
@@ -207,11 +225,20 @@ int main(int argc, char** argv)
     vel_msg.angular.z = 0;
     cmd_vel_pub.publish(vel_msg);
 
+
+    std::vector<float> yaw_vec;
+
     while(ros::ok())
     {
-        display_counter = 1;
+        display_counter++;
+        if (display_counter%1000 == 0) {
+            cout << "yaw: " << yaw << endl;
+            // printLaserRanges();
+        }
+
         if (display_counter%100 == 0)
-            printLaserRanges();
+            yaw_vec.push_back(yaw);
+
 
         switch(state) {
 
@@ -274,8 +301,10 @@ int main(int argc, char** argv)
                 C.first.end.xpos = R.xpos;
                 C.first.end.ypos = Front.new_dist;
 
-                // capture imu yaw
+                // capture imu yaw here (when corner is detected, robot jums off to the right)
                 R.yaw = yaw;
+                ROS_INFO("Captured yaw from IMU");
+                cout << "R.Yaw: " << R.yaw << endl;
 
 
                 state = SECOND_CORNER_START;
@@ -323,18 +352,19 @@ int main(int argc, char** argv)
 
         case START_PARKING:
 
-            vel_msg.linear.x = - LINEAR_SPEED;
+            vel_msg.linear.x = - BACKWARD_SPEED_1;
             vel_msg.angular.z = - STEERING_FIRST;
             cmd_vel_pub.publish(vel_msg);
 
-            // check if first backward distance reached
-            // todo implement yaw support
+
+            // TODO implement yaw support
             if (abs((yaw - R.yaw)) >= YAW_THRESHOLD) {
                 ROS_INFO("Reached IMU YAW_THRESHOLD");
                 cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
             }
 
-            if (Back.middle_dist <= BACKWARD_THRESHOLD_1) {
+            // check if first backward distance reached
+            if (Back.middle_dist <= BACKWARD_THRESHOLD_1 /* || (abs((yaw - R.yaw)) >= YAW_THRESHOLD) */) {
                 ROS_INFO("Back.middle_dist is in range for steering reversal point");
                 cout << "Back.middle_dist" << Back.middle_dist << endl;
 
@@ -348,11 +378,11 @@ int main(int argc, char** argv)
 
         case PARKING_STATE_1:
 
-            vel_msg.linear.x = - LINEAR_SPEED;
+            vel_msg.linear.x = - BACKWARD_SPEED_2;
             vel_msg.angular.z = MAX_STEERING;
             cmd_vel_pub.publish(vel_msg);
 
-            // check if first backward distance reached
+            // check if second backward distance reached
             if (Back.middle_dist <= BACKWARD_THRESHOLD_2) {
                 ROS_INFO("Back.middle_dist is in range for backward minimum position");
                 cout << "Back.middle_dist" << Back.middle_dist << endl;
@@ -371,8 +401,7 @@ int main(int argc, char** argv)
                 display_once = false;
             }
 
-            // TODO add ray component for middle ray here
-            if (Front.middle_dist >= 0.2) {
+            if (Front.half_left_dist >= FORWARD_THRESHOLD_2) {
                 // ROS_INFO("Front.middle_dist is large enough to do a correction step");
                 // cout << "Front.middle_dist" << Front.middle_dist << endl;
 
@@ -382,7 +411,7 @@ int main(int argc, char** argv)
             }
 
             // check if forward min distance reached
-            if (Front.middle_dist <= 0.2) {
+            if (Front.half_left_dist <= FORWARD_THRESHOLD_1) {
                 // ROS_INFO("Front.middle_dist is to small for correction step");
                 // cout << "Front.middle_dist" << Front.middle_dist << endl;
 
@@ -401,6 +430,17 @@ int main(int argc, char** argv)
             vel_msg.linear.x = 0;
             vel_msg.angular.z = 0;
             cmd_vel_pub.publish(vel_msg);
+
+            // yaw debug section --------
+            char input;
+            cout << endl << "Do you want to print the yaw vector? Press 'y'" << endl;
+            cin >> input;
+            if (input == 'y') {
+                for (int i=0; i<yaw_vec.size(); i++) {
+                    cout << yaw_vec[i] << endl;
+                }
+            }
+            // ------------
 
             ROS_INFO("Finished! Exiting...");
             exit(EXIT_SUCCESS);

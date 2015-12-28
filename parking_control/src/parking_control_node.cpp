@@ -39,7 +39,7 @@ int main(int argc, char** argv)
                 }
                 else if(autonomous_control.cmd_linearVelocity<0)
                 {
-                    autonomous_control.control_servo.x = 1500 - 250;
+                    autonomous_control.control_servo.x = 1500 + autonomous_control.cmd_linearVelocity * 250;
                 }
                 else
                 {
