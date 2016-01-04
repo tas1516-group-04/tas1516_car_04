@@ -14,7 +14,7 @@ int main(int argc, char** argv)
     {
         if(autonomous_control.control_Mode.data==0)
         {
-            ROS_INFO("Manually Control!");
+            //ROS_INFO("Manually Control!");
         }
         else
         {
