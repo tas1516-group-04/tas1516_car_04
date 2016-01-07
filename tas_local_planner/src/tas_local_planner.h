@@ -11,6 +11,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "speed_controller.h"
+
 using std::string;
 
 #ifndef TAS_LOCAL_PLANNER_CPP
@@ -45,6 +47,9 @@ public:
     bool isGoalReached();
 
 private:
+
+    // SpeedController
+    SpeedController sc;
 
     //parameters
     double carwidth_;

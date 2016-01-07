@@ -31,6 +31,7 @@ int main(int argc, char** argv)
                     autonomous_control.control_servo.x = 1550;
                     // clip cmd_vel between [0,1]
                     // servo = min + (max-min)*clipped
+                    autonomous_control.control_servo.x = 1525 + 50 * autonomous_control.cmd_linearVelocity;
                 }
                 else if(autonomous_control.cmd_linearVelocity<0)
                 {
