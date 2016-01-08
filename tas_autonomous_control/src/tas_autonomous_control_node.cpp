@@ -25,13 +25,14 @@ int main(int argc, char** argv)
             }
             else
             {
-                ROS_INFO("Automatic Control!");
+                // ROS_INFO("Automatic Control!");
                 if(autonomous_control.cmd_linearVelocity>0)
                 {
+                    std::cout << "vel_cmd: " << autonomous_control.vel_linearVelocity << std::endl;
                     autonomous_control.control_servo.x = 1550;
                     // clip cmd_vel between [0,1]
                     // servo = min + (max-min)*clipped
-                    autonomous_control.control_servo.x = 1525 + 50 * autonomous_control.cmd_linearVelocity;
+                    // autonomous_control.control_servo.x = 1525 + 50 * autonomous_control.cmd_linearVelocity;
                 }
                 else if(autonomous_control.cmd_linearVelocity<0)
                 {

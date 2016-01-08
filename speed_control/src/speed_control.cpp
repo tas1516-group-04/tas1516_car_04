@@ -38,14 +38,18 @@ int main(int argc, char **argv) {
 
     const tf::TransformListener tf_listener;
     SpeedController sc(&tf_listener);
+    sc.set_parameters(n);
     ros::Subscriber plan_subscriber = n.subscribe("move_base_node/NavfnROS/plan", 10,
                                                 &SpeedController::planCallback, &sc);
+    ros::Publisher vel_publisher = n.advertise<geometry_msgs::Twist>("vel", 100);
 
-    ros::Rate loop_rate(5);
+    ros::Rate loop_rate(20);
     ROS_INFO("SpeedController running. Entering loop.\n");
     while (ros::ok())
     {
-        sc.calcSpeed();
+        geometry_msgs::Twist speed;
+        speed.linear.x = sc.calcSpeed();
+        vel_publisher.publish(speed);
         ros::spinOnce();
         loop_rate.sleep();
     }

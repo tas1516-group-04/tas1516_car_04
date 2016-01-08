@@ -18,13 +18,10 @@ void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
 //Default Constructor
 namespace tas_local_planner {
 
-LocalPlanner::LocalPlanner () : sc(nodeHandle_, nullptr)
-{
+LocalPlanner::LocalPlanner (){
 }
 
-LocalPlanner::LocalPlanner(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) : sc(nodeHandle_, tf)
-
-{
+LocalPlanner::LocalPlanner(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros){
     initialize(name, tf, costmap_ros);
 }
 
@@ -35,20 +32,20 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         tf_ = tf;
         costmap_ros_ = costmap_ros;
         goalIsReached_ = false;
-        sc.initialize();
 
         //parameters
-        nodeHandle_.param<double>("car_width", carwidth_, 0.7);
-        nodeHandle_.param<double>("wheelbase", wheelbase_, 0.3);
+        nodeHandle_.param<float>("car_width", carwidth_, 0.7);
+        nodeHandle_.param<float>("wheelbase", wheelbase_, 0.3);
         nodeHandle_.param<bool>("obstacle_avoidance", doObstacleAvoidance_, 0);
         nodeHandle_.param<int>("min_target_point", minTargetPoint_, 50);
-        nodeHandle_.param<double>("steering_angle_parameter", steeringAngleParameter_, 0.6);
-        nodeHandle_.param<double>("laser_max_dist", laserMaxDist_, 2);
+        nodeHandle_.param<float>("steering_angle_parameter", steeringAngleParameter_, 0.6);
+        nodeHandle_.param<float>("laser_max_dist", laserMaxDist_, 2);
 
         //debug file
         debugFile_.open("debug.txt");
 
         //finish initialization
+        ROS_INFO("TAS LocalPlanner succesfully initialized!");
         initialized_ = true;
     } else {
         ROS_INFO("TAS LocalPlanner is already initialized!");
@@ -81,7 +78,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         /// calc steerAngle from trajectorie
         // TODO: which point from plan? depending on distance?
         int point = minTargetPoint_; // which point first? distance?
-        // ROS_INFO("Distance: %f", calcDistance(plan_[0], plan_[point]));
+        ROS_INFO("Distance: %f", calcDistance(plan_[0], plan_[point]));
         // +/- M_PI/2? check!
         while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.3){
             point ++;
@@ -160,8 +157,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         return true;
     } else {
         //cmd_vel.linear.x = 1.1 - (cmd_vel.angular.z*M_PI)/4;
-        // std::cout << sc.calcSpeed() << std::endl;
-        cmd_vel.linear.x = sc.calcSpeed();
+        cmd_vel.linear.x =0.2;
 	      return true;
     }
     // ---
@@ -220,7 +216,7 @@ void LocalPlanner::analyzeLaserData(float r)
             if(objectStarted && newObject.end - newObject.start > 10) {
                 laserObjects_.push_back(newObject);
                 objectStarted = false;
-            } else {asersushi
+            } else {
                 objectStarted = false;
             }
         }

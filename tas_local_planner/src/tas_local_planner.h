@@ -11,8 +11,6 @@
 #include <iostream>
 #include <fstream>
 
-#include "speed_controller.h"
-
 using std::string;
 
 #ifndef TAS_LOCAL_PLANNER_CPP
@@ -48,16 +46,13 @@ public:
 
 private:
 
-    // SpeedController
-    SpeedController sc;
-
     //parameters
-    double carwidth_;
-    double wheelbase_;
+    float carwidth_;
+    float wheelbase_;
     bool doObstacleAvoidance_;
     int minTargetPoint_;
-    double steeringAngleParameter_;
-    double laserMaxDist_;
+    float steeringAngleParameter_;
+    float laserMaxDist_;
 
     //variables
     bool goalIsReached_;

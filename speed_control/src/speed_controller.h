@@ -19,6 +19,9 @@ public:
     // Called when a new global plan is published
     void planCallback(const nav_msgs::Path::ConstPtr &);
 
+    // Set parameters from parameter server
+    void set_parameters(ros::NodeHandle& node_handle);
+
     // Return a cmd_vel value for the speed in x direction
     double calcSpeed();
 
@@ -29,18 +32,26 @@ private:
     const tf::TransformListener *transform_listener;
     std::vector<geometry_msgs::PoseStamped> current_path;
 
+    // Parameters
+    int jump_segments;
+    double angle_min, angle_max;
+    double short_limit, long_limit;
+
     // Transform a path from map to base_link frame
     void transformPath(std::vector<geometry_msgs::PoseStamped> &);
 
     // Euclidean distance from two poses/ two 2dvecs
     double calcDistance(const geometry_msgs::PoseStamped &, const geometry_msgs::PoseStamped &);
     double calcDistance(const double &x_diff, const double &y_diff);
+    // Angle between pose2-pose1 and x-axis(base_link-frame)
+    double calcAngle(const geometry_msgs::PoseStamped &pose1, const geometry_msgs::PoseStamped &pose2);
 
     // Keep value between lower and upper bounds
     double clip(double n, double lower, double upper);
 
     // Sum change of angles up to a maximum distance or to the end of the path
     double calcCurveWeight(const double maxDist);
+    double calcCurveWeightSimple();
 
 //    inline double calcDistance(const geometry_msgs::PoseStamped &pose1, const geometry_msgs::PoseStamped &pose2) {
 //        return sqrt(pow((pose1.pose.position.x - pose2.pose.position.x), 2) +

@@ -76,7 +76,6 @@
     <rosparam file="$(find tas)/launch/config/move_base/global_costmap_params.yaml" command="load" />
     <rosparam file="$(find tas)/launch/config/move_base/tas_local_planner_params.yaml" command="load" />
     <!--<rosparam file="$(find tas)/launch/config/move_base/base_local_planner_params.yaml" command="load" />-->
-    <rosparam file="$(find tas)/launch/config/speed_control/speed_control.yaml" command="load" />
     <param name="planner_frequency" value="5.0"/>
   </node>
 
