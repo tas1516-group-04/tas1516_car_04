@@ -12,7 +12,31 @@
 #include <iostream>
 #include <fstream>
 
+#include <time.h>
+#include <string>
+
+#define MAX_DATE 12
+
 using namespace std;
+
+
+
+std::string get_date(void)
+{
+   time_t now;
+   char the_date[MAX_DATE];
+
+   the_date[0] = '\0';
+
+   now = time(NULL);
+
+   if (now != -1)
+   {
+      strftime(the_date, MAX_DATE, "%d_%m_%Y", gmtime(&now));
+   }
+
+   return std::string(the_date);
+}
 
 typedef struct {
     float new_dist;
@@ -462,7 +486,8 @@ int main(int argc, char** argv)
             cin >> input;
             if (input == 'y') {
                 ofstream myfile;
-                myfile.open ("data/yaw.txt");
+                string fname = get_date() + "_yaw.txt";
+                myfile.open(fname.c_str());
                 for (int i=0; i<yaw_vec.size(); i++) {
                     cout << yaw_vec[i] << endl;
                     myfile << yaw_vec[i] << endl;
