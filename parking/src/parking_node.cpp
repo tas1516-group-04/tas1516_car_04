@@ -125,6 +125,8 @@ int main(int argc, char** argv)
     ROS_INFO("Add subscribers...");
     ros::Subscriber lsF_sub = n.subscribe<sensor_msgs::LaserScan>("/scan",10, processLaserScanF);
     ros::Subscriber lsB_sub = n.subscribe<sensor_msgs::LaserScan>("/scan_back",10, processLaserScanB);
+    ros::Subscriber imu_sub = n.subscribe<sensor_msgs::Imu>("/imu/data",10, processImu);
+
 
     ros::Publisher cmd_vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
 
@@ -232,7 +234,7 @@ int main(int argc, char** argv)
     {
         display_counter++;
         if (display_counter%1000 == 0) {
-            cout << "yaw: " << yaw << endl;
+            //cout << "yaw: " << yaw << endl;
             // printLaserRanges();
         }
 
@@ -253,13 +255,15 @@ int main(int argc, char** argv)
             cmd_vel_pub.publish(vel_msg);
 
             // check if in a certain range next to parking wall
-            if (Front.left_dist >= MIN_DIST && Front.left_dist <= MAX_DIST) {
+            if (Front.left_dist >= MIN_GAP_DEPTH && Front.left_dist <= MAX_GAP_DEPTH) {
                 ROS_INFO("Front.left_dist is in range for parking");
                 cout << "Front.left_dist " << Front.left_dist << endl;
 
                 // set robot position in parking coordinate system
                 R.xpos = 0;
                 R.ypos = Front.new_dist;
+
+		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = FIRST_CORNER_START;
                 ROS_INFO("state: FIRST_CORNER_START");
@@ -281,6 +285,8 @@ int main(int argc, char** argv)
                 // capture corner position now for first corner start
                 C.first.start.xpos = R.xpos;
                 C.first.start.ypos = Front.new_dist;
+
+		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = FIRST_CORNER_END;
                 ROS_INFO("state: FIRST_CORNER_END");
@@ -304,8 +310,8 @@ int main(int argc, char** argv)
                 // capture imu yaw here (when corner is detected, robot jums off to the right)
                 R.yaw = yaw;
                 ROS_INFO("Captured yaw from IMU");
-                cout << "R.Yaw: " << R.yaw << endl;
-
+                
+		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = SECOND_CORNER_START;
                 ROS_INFO("state: SECOND_CORNER_START");
@@ -325,6 +331,8 @@ int main(int argc, char** argv)
                 C.second.start.xpos = R.xpos;
                 C.second.start.ypos = Front.new_dist;
 
+		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
+
                 state = SECOND_CORNER_END;
                 ROS_INFO("state: SECOND_CORNER_END");
             }
@@ -343,6 +351,8 @@ int main(int argc, char** argv)
                 // capture robot position now for second corner end
                 C.second.end.xpos = R.xpos;
                 C.second.end.ypos = Front.new_dist;
+
+		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;	
 
                 state = START_PARKING;
                 ROS_INFO("state: START_PARKING");
@@ -368,12 +378,13 @@ int main(int argc, char** argv)
                 ROS_INFO("Back.middle_dist is in range for steering reversal point");
                 cout << "Back.middle_dist" << Back.middle_dist << endl;
 
+		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
+
                 state = PARKING_STATE_1;
                 ROS_INFO("state: PARKING_STATE_1");
                 ROS_INFO("Steering reversal point reached!");
                 ROS_INFO("Driving Backwards with max steering angle...");
             }
-
             break;
 
         case PARKING_STATE_1:
@@ -386,6 +397,8 @@ int main(int argc, char** argv)
             if (Back.middle_dist <= BACKWARD_THRESHOLD_2) {
                 ROS_INFO("Back.middle_dist is in range for backward minimum position");
                 cout << "Back.middle_dist" << Back.middle_dist << endl;
+
+		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = PARKING_STATE_2;
                 ROS_INFO("state:PARKING_STATE_2");
@@ -406,7 +419,7 @@ int main(int argc, char** argv)
                 // cout << "Front.middle_dist" << Front.middle_dist << endl;
 
                 vel_msg.linear.x = LINEAR_SPEED;
-                vel_msg.angular.z = 0;
+                vel_msg.angular.z = 0.5;
                 cmd_vel_pub.publish(vel_msg);
             }
 
@@ -426,6 +439,8 @@ int main(int argc, char** argv)
                 ROS_INFO("Parking Finished. Setting speed to zero... ");
                 display_once = false;
             }
+
+	    cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
             vel_msg.linear.x = 0;
             vel_msg.angular.z = 0;
