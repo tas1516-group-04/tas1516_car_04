@@ -8,6 +8,10 @@
 #include <iostream>
 #include <sensor_msgs/Imu.h>
 
+// for file printing
+#include <iostream>
+#include <fstream>
+
 using namespace std;
 
 typedef struct {
@@ -241,7 +245,6 @@ int main(int argc, char** argv)
         if (display_counter%100 == 0)
             yaw_vec.push_back(yaw);
 
-
         switch(state) {
 
         case INIT:
@@ -249,7 +252,7 @@ int main(int argc, char** argv)
                 ROS_INFO("Start Parking... ");
                 display_once = false;
             }
-
+            // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
             vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
             cmd_vel_pub.publish(vel_msg);
@@ -263,7 +266,7 @@ int main(int argc, char** argv)
                 R.xpos = 0;
                 R.ypos = Front.new_dist;
 
-		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
+                cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = FIRST_CORNER_START;
                 ROS_INFO("state: FIRST_CORNER_START");
@@ -286,7 +289,7 @@ int main(int argc, char** argv)
                 C.first.start.xpos = R.xpos;
                 C.first.start.ypos = Front.new_dist;
 
-		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
+                cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = FIRST_CORNER_END;
                 ROS_INFO("state: FIRST_CORNER_END");
@@ -311,7 +314,7 @@ int main(int argc, char** argv)
                 R.yaw = yaw;
                 ROS_INFO("Captured yaw from IMU");
                 
-		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
+                cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = SECOND_CORNER_START;
                 ROS_INFO("state: SECOND_CORNER_START");
@@ -331,7 +334,7 @@ int main(int argc, char** argv)
                 C.second.start.xpos = R.xpos;
                 C.second.start.ypos = Front.new_dist;
 
-		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
+                cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = SECOND_CORNER_END;
                 ROS_INFO("state: SECOND_CORNER_END");
@@ -352,7 +355,7 @@ int main(int argc, char** argv)
                 C.second.end.xpos = R.xpos;
                 C.second.end.ypos = Front.new_dist;
 
-		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;	
+                cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = START_PARKING;
                 ROS_INFO("state: START_PARKING");
@@ -378,7 +381,7 @@ int main(int argc, char** argv)
                 ROS_INFO("Back.middle_dist is in range for steering reversal point");
                 cout << "Back.middle_dist" << Back.middle_dist << endl;
 
-		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
+                cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = PARKING_STATE_1;
                 ROS_INFO("state: PARKING_STATE_1");
@@ -398,7 +401,7 @@ int main(int argc, char** argv)
                 ROS_INFO("Back.middle_dist is in range for backward minimum position");
                 cout << "Back.middle_dist" << Back.middle_dist << endl;
 
-		cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
+                cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = PARKING_STATE_2;
                 ROS_INFO("state:PARKING_STATE_2");
@@ -440,7 +443,7 @@ int main(int argc, char** argv)
                 display_once = false;
             }
 
-	    cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
+            cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
             vel_msg.linear.x = 0;
             vel_msg.angular.z = 0;
@@ -448,12 +451,16 @@ int main(int argc, char** argv)
 
             // yaw debug section --------
             char input;
-            cout << endl << "Do you want to print the yaw vector? Press 'y'" << endl;
+            cout << endl << "Do you want to print the yaw vector and save it to a file? Press 'y'" << endl;
             cin >> input;
             if (input == 'y') {
+                ofstream myfile;
+                myfile.open ("data/yaw.txt");
                 for (int i=0; i<yaw_vec.size(); i++) {
                     cout << yaw_vec[i] << endl;
+                    myfile << yaw_vec[i] << endl;
                 }
+                myfile.close();
             }
             // ------------
 
