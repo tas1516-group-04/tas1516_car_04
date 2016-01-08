@@ -371,13 +371,20 @@ int main(int argc, char** argv)
 
 
             // TODO implement yaw support
+	    /*
             if (abs((yaw - R.yaw)) >= YAW_THRESHOLD) {
                 ROS_INFO("Reached IMU YAW_THRESHOLD");
                 cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
             }
+	    */
 
             // check if first backward distance reached
-            if (Back.middle_dist <= BACKWARD_THRESHOLD_1 /* || (abs((yaw - R.yaw)) >= YAW_THRESHOLD) */) {
+            if (Back.middle_dist <= BACKWARD_THRESHOLD_1 || (abs((yaw - R.yaw)) >= YAW_THRESHOLD)) {
+		if (abs((yaw - R.yaw)) >= YAW_THRESHOLD) {
+                ROS_INFO("Reached IMU YAW_THRESHOLD");
+                cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
+            }
+
                 ROS_INFO("Back.middle_dist is in range for steering reversal point");
                 cout << "Back.middle_dist" << Back.middle_dist << endl;
 
@@ -397,7 +404,7 @@ int main(int argc, char** argv)
             cmd_vel_pub.publish(vel_msg);
 
             // check if second backward distance reached
-            if (Back.middle_dist <= BACKWARD_THRESHOLD_2) {
+            if (Back.half_left_dist <= BACKWARD_THRESHOLD_2) {
                 ROS_INFO("Back.middle_dist is in range for backward minimum position");
                 cout << "Back.middle_dist" << Back.middle_dist << endl;
 
@@ -422,7 +429,7 @@ int main(int argc, char** argv)
                 // cout << "Front.middle_dist" << Front.middle_dist << endl;
 
                 vel_msg.linear.x = LINEAR_SPEED;
-                vel_msg.angular.z = 0.5;
+                vel_msg.angular.z = 0.3;
                 cmd_vel_pub.publish(vel_msg);
             }
 
