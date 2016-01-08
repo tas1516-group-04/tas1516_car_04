@@ -1,3 +1,6 @@
+#define MAX_VEL 1600
+#define MIN_VEL 1525
+
 #include "control/control.h"
 
 int main(int argc, char** argv)
@@ -11,7 +14,7 @@ int main(int argc, char** argv)
     {
         if(autonomous_control.control_Mode.data==0)
         {
-            ROS_INFO("Manually Control!");
+            //ROS_INFO("Manually Control!");
         }
         else
         {
@@ -26,6 +29,9 @@ int main(int argc, char** argv)
                 if(autonomous_control.cmd_linearVelocity>0)
                 {
                     autonomous_control.control_servo.x = 1550;
+                    // clip cmd_vel between [0,1]
+                    // servo = min + (max-min)*clipped
+                    // autonomous_control.control_servo.x = 1525 + 50 * autonomous_control.cmd_linearVelocity;
                 }
                 else if(autonomous_control.cmd_linearVelocity<0)
                 {
