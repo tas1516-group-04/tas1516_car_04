@@ -80,7 +80,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         /// calc steerAngle from trajectorie
         // TODO: which point from plan? depending on distance?
         int point = minTargetPoint_; // which point first? distance?
-        //ROS_INFO("Distance: %f", calcDistance(plan_[0], plan_[point]));
+        ROS_INFO("Distance: %f", calcDistance(plan_[0], plan_[point]));
         // +/- M_PI/2? check!
         while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.3){
             point ++;

@@ -2,60 +2,38 @@
 
 // Default constructor for the SpeedController
 // Adds listener to the tf topic. Initial plan is null
-SpeedController::SpeedController(ros::NodeHandle &nh, const tf::TransformListener *listener) :
-    node_handle(nh),
-    transform_listener(listener)
+SpeedController::SpeedController(const tf::TransformListener *listener)
 {
+    transform_listener = listener;
     plan_valid = false;
-    cmd_velocity = 0.0;
-
-    cmd_subscriber = node_handle.subscribe<geometry_msgs::Twist>("cmd_vel2", 1000, &SpeedController::cmdCallback, this);
-    cmd_publisher = node_handle.advertise<geometry_msgs::Twist>("cmd_vel", 1);
-
-    node_handle.param<int>("/speed_control_node/jump_segments", jump_segments, 5);
-    node_handle.param<double>("/speed_control_node/angle_min", angle_min, 0.0);
-    node_handle.param<double>("/speed_control_node/angle_max", angle_max, 90.0);
 }
 
 // Callback for the NavfnROS/plan subscriber
 // Transforms the given path into the base_link frame and stores it
 void SpeedController::planCallback(const nav_msgs::Path::ConstPtr &path)
 {
-    // Assume valid plan
-    plan_valid = true;
-    // Need at least some elements in path
-    if (path->poses.size() < jump_segments+15)
-    {
-        plan_valid = false;
-        return;
-    }
+    plan_valid = false;
 
     // Transform and store path
     current_path = path->poses;
     transformPath(current_path);
+
+    plan_valid = true;
 }
 
-void SpeedController::calcSpeed()
+void SpeedController::set_parameters(ros::NodeHandle &node_handle)
 {
-    double curveAngle = calcCurveWeight(2.0);
-    curveAngle = clip(curveAngle, angle_min, angle_max);
-    if (plan_valid)
-    {
-    	cmd_velocity = 1 - (curveAngle - angle_min) / angle_max;
-    }
-    else
-    {
-	cmd_velocity = 0;
-    }
-    std::cout << "velocity: " << cmd_velocity << " angle: " << curveAngle << std::endl;
+    // Parameters from parameter server
+    node_handle.param<int>("/speed_control_node/jump_segments", jump_segments, 5);
+    node_handle.param<double>("/speed_control_node/angle_min", angle_min, 0.0);
+    node_handle.param<double>("/speed_control_node/angle_max", angle_max, 90.0);
+    node_handle.param<double>("/speed_control_node/short_limit", short_limit, 40.0);
+    node_handle.param<double>("/speed_control_node/long_limit", long_limit, 40.0);
 }
 
-void SpeedController::cmdCallback(const geometry_msgs::Twist::ConstPtr &cmd_vel2)
+double SpeedController::calcSpeed()
 {
-    // Load velocity command from the speed controller
-    geometry_msgs::Twist cmd_vel = *cmd_vel2;
-    cmd_vel.linear.x = cmd_velocity;
-    cmd_publisher.publish(cmd_vel);
+    return calcCurveWeightSimple();
 }
 
 void SpeedController::transformPath(std::vector<geometry_msgs::PoseStamped> &path)
@@ -87,6 +65,16 @@ double SpeedController::calcDistance(const double &x_diff, const double &y_diff)
     return sqrt(x_diff*x_diff + y_diff*y_diff);
 }
 
+double SpeedController::calcAngle(const geometry_msgs::PoseStamped &pose1, const geometry_msgs::PoseStamped &pose2)
+{
+//    std::cout << std::setprecision(5)
+//              << "y2: " << pose2.pose.position.y << " y1: " << pose1.pose.position.y << " ydiff: " << pose2.pose.position.y - pose1.pose.position.y
+//              << "\nx2: " << pose2.pose.position.x << " x1: " << pose1.pose.position.x << " xdiff: " << pose2.pose.position.x - pose1.pose.position.x
+//              << std::endl;
+    return atan2(pose2.pose.position.y - pose1.pose.position.y, pose2.pose.position.x - pose1.pose.position.x);
+}
+
+
 double SpeedController::clip(double n, double lower, double upper)
 {
     return std::max(lower, std::min(n, upper));
@@ -103,6 +91,7 @@ double SpeedController::calcCurveWeight(const double maxDist)
     // Check if plan is up to date and contains enough segments
     if (plan_valid)
     {
+        const int jump_segments = 10;
         // Initialize with the first two poses so the iterative algorithm works
         double vx = 0.0, vx_prev = current_path[jump_segments].pose.position.x - current_path[0].pose.position.x;
         double vy = 0.0, vy_prev = current_path[jump_segments].pose.position.y - current_path[0].pose.position.y;
@@ -126,12 +115,12 @@ double SpeedController::calcCurveWeight(const double maxDist)
             angle = fabs(acos(clip((vx * vx_prev + vy * vy_prev) / (dist * dist_prev), 0.0, 1.0))*180/M_PI);
 
             // Logging
-//            if (logfile.is_open()) {
-//                logfile << "angle: " << angle
-//                        << " dist: " << dist
-//                        << " acc_angle: " << accumulatedAngle
-//                        << " acc_dist: " << accumulatedDistance << std::endl;
-//            }
+            if (logfile.is_open()) {
+                logfile << "angle: " << angle
+                        << " dist: " << dist
+                        << " acc_angle: " << accumulatedAngle
+                        << " acc_dist: " << accumulatedDistance << std::endl;
+            }
 
             // Accumulate distance and angle
             accumulatedDistance += dist;
@@ -143,14 +132,70 @@ double SpeedController::calcCurveWeight(const double maxDist)
             vy_prev = vy;
         }
         logfile.close();
-        std::cout << std::setprecision(5) << "angle: " << accumulatedAngle << " distance: " << accumulatedDistance << std::endl;
+        ROS_INFO("\nangle: %.7lf distance: %.3lf", accumulatedAngle, accumulatedDistance);
     }
     else
     {
-        std::cout << "No valid path" << std::endl;
+        ROS_INFO("No valid path");
     }
 
     return accumulatedAngle;
+}
+
+double SpeedController::calcCurveWeightSimple()
+{
+    double accumulatedDistance = 0.0;
+    double shortDist = 0.4, longDist = 2.0;
+    double shortAngle = 0.0, longAngle = 0.0;
+    bool shortValid = false, longValid = false;
+    double threshold = shortDist;
+    double weight = 0.0;
+
+    const double maxShort = short_limit, maxLong = long_limit;
+
+    for (int i = 1; i < current_path.size(); i += 1)
+    {
+        accumulatedDistance += calcDistance(current_path[i], current_path[i-1]);
+        if (accumulatedDistance > threshold)
+        {
+            if (threshold == longDist) // Large threshold reached - leave loop
+            {
+                longAngle = fabs(calcAngle(current_path[0], current_path[i]))*180/M_PI;
+                longValid = true;
+                std::cout << " longAngle: " << longAngle << " accDist: " << accumulatedDistance <<  std::endl;
+                break;
+            }
+            else // Short threshold reached - switch to larger threshold
+            {
+                threshold = longDist;
+                shortAngle = fabs(calcAngle(current_path[0], current_path[i]))*180/M_PI;
+                shortValid = true;
+                std::cout << " shortAngle: " << shortAngle << " accDist: " << accumulatedDistance <<  std::endl;
+            }
+        }
+    }
+
+    if (shortValid)
+    {
+        weight += 0.5 * clip(shortAngle, 0.01, maxShort)/maxShort;
+        std::cout << "s " << weight << std::endl;
+        if (longValid)
+        {
+            weight += 0.5 * clip(longAngle, 0.01, maxLong)/maxLong;
+        }
+        else
+        {
+            weight += 0.5;
+        }
+        std::cout << "g " << weight << std::endl;
+        return weight;
+    }
+    else
+    {
+        return -1.0;
+    }
+
+
 }
 
 

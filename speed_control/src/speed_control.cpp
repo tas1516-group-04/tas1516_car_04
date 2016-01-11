@@ -29,23 +29,27 @@ using namespace std;
 //    }
 //    else cout << "Unable to open file";
 
-//    ROS_INFO("%lu", path->poses.size());
+//    ROS_INFO("%lu", path->poses.size()    // Need at least some elements in path
 //}
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "curve_detect");
-    ros::NodeHandle nh;
+    ros::NodeHandle n;
 
     const tf::TransformListener tf_listener;
-    SpeedController sc(nh, &tf_listener);
-    ros::Subscriber plan_subscriber = nh.subscribe("move_base_node/NavfnROS/plan", 10,
+    SpeedController sc(&tf_listener);
+    sc.set_parameters(n);
+    ros::Subscriber plan_subscriber = n.subscribe("move_base_node/NavfnROS/plan", 10,
                                                 &SpeedController::planCallback, &sc);
+    ros::Publisher vel_publisher = n.advertise<geometry_msgs::Twist>("vel", 100);
 
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(20);
     ROS_INFO("SpeedController running. Entering loop.\n");
     while (ros::ok())
     {
-        sc.calcSpeed();
+        geometry_msgs::Twist speed;
+        speed.linear.x = sc.calcSpeed();
+        vel_publisher.publish(speed);
         ros::spinOnce();
         loop_rate.sleep();
     }
