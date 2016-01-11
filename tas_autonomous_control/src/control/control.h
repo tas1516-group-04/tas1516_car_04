@@ -20,6 +20,7 @@ public:
     ros::NodeHandle nh_;
     ros::Publisher control_servo_pub_;
     ros::Subscriber cmd_sub_;
+    ros::Subscriber vel_sub_;
     ros::Subscriber odom_sub_;
     ros::Subscriber wii_communication_sub;
 
@@ -29,6 +30,8 @@ public:
     double cmd_linearVelocity;
     double cmd_angularVelocity;
     double cmd_steeringAngle;
+
+    double vel_linearVelocity;
 
     double odom_linearVelocity;
     double odom_angularVelocity;
@@ -46,6 +49,8 @@ private:
     /* check the wii states and switch the flag for manual mode and autonomous mode */
     void wiiCommunicationCallback(const std_msgs::Int16MultiArray::ConstPtr& msg);
 
+    // Subscribe the vel message from speed_controller
+    void velCallback(const geometry_msgs::Twist::ConstPtr &msg);
 };
 
 #endif // CONTROL_H
