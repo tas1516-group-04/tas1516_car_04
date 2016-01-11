@@ -15,6 +15,7 @@ int main(int argc, char** argv)
         if(autonomous_control.control_Mode.data==0)
         {
             //ROS_INFO("Manually Control!");
+            std::cout << "vel_cmd: " << autonomous_control.vel_linearVelocity << std::endl;
         }
         else
         {

@@ -29,7 +29,7 @@ using namespace std;
 //    }
 //    else cout << "Unable to open file";
 
-//    ROS_INFO("%lu", path->poses.size());
+//    ROS_INFO("%lu", path->poses.size()    // Need at least some elements in path
 //}
 
 int main(int argc, char **argv) {

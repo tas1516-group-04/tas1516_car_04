@@ -12,18 +12,13 @@ SpeedController::SpeedController(const tf::TransformListener *listener)
 // Transforms the given path into the base_link frame and stores it
 void SpeedController::planCallback(const nav_msgs::Path::ConstPtr &path)
 {
-    // Assume valid plan
-    plan_valid = true;
-    // Need at least some elements in path
-    if (path->poses.size() < 12)
-    {
-        plan_valid = false;
-        return;
-    }
+    plan_valid = false;
 
     // Transform and store path
     current_path = path->poses;
     transformPath(current_path);
+
+    plan_valid = true;
 }
 
 void SpeedController::set_parameters(ros::NodeHandle &node_handle)
@@ -156,7 +151,7 @@ double SpeedController::calcCurveWeightSimple()
     double threshold = shortDist;
     double weight = 0.0;
 
-    const double maxShort = 60.0, maxLong = 60.0;
+    const double maxShort = short_limit, maxLong = long_limit;
 
     for (int i = 1; i < current_path.size(); i += 1)
     {
@@ -165,17 +160,17 @@ double SpeedController::calcCurveWeightSimple()
         {
             if (threshold == longDist) // Large threshold reached - leave loop
             {
-                longAngle = fabs(calcAngle(current_path[0], current_path[i]));
+                longAngle = fabs(calcAngle(current_path[0], current_path[i]))*180/M_PI;
                 longValid = true;
-                // std::cout << "i: " << i << " longAngle: " << longAngle*180/M_PI << " accDist: " << accumulatedDistance <<  std::endl;
+                std::cout << " longAngle: " << longAngle << " accDist: " << accumulatedDistance <<  std::endl;
                 break;
             }
             else // Short threshold reached - switch to larger threshold
             {
                 threshold = longDist;
-                shortAngle = fabs(calcAngle(current_path[0], current_path[i]));
+                shortAngle = fabs(calcAngle(current_path[0], current_path[i]))*180/M_PI;
                 shortValid = true;
-                // std::cout << "i: " << i  << " shortAngle: " << shortAngle*180/M_PI << " accDist: " << accumulatedDistance <<  std::endl;
+                std::cout << " shortAngle: " << shortAngle << " accDist: " << accumulatedDistance <<  std::endl;
             }
         }
     }
@@ -183,25 +178,22 @@ double SpeedController::calcCurveWeightSimple()
     if (shortValid)
     {
         weight += 0.5 * clip(shortAngle, 0.01, maxShort)/maxShort;
+        std::cout << "s " << weight << std::endl;
         if (longValid)
         {
-            weight += 0.5 * clip(longAngle, 0.0, maxLong)/maxLong;
+            weight += 0.5 * clip(longAngle, 0.01, maxLong)/maxLong;
         }
         else
         {
             weight += 0.5;
         }
-        std::cout << weight << std::endl;
+        std::cout << "g " << weight << std::endl;
         return weight;
     }
     else
     {
         return -1.0;
     }
-
-
-
-
 
 
 }
