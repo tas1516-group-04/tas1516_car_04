@@ -37,7 +37,7 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         nodeHandle_.param<double>("/move_base_node/car_width", carwidth_, 0.7);
         nodeHandle_.param<double>("/move_base_node/wheelbase", wheelbase_, 0.3);
         nodeHandle_.param<bool>("/move_base_node/obstacle_avoidance", doObstacleAvoidance_, false);
-        nodeHandle_.param<int>("/move_base_node/min_target_point", minTargetPoint_, 50);
+        nodeHandle_.param<int>("/move_base_node/min_distance", minDistance_, 50);
         nodeHandle_.param<double>("/move_base_node/steering_angle_parameter", steeringAngleParameter_, 0.6);
         nodeHandle_.param<double>("/move_base_node/laser_max_dist", laserMaxDist_, 2);
         if(doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance active!");
@@ -59,18 +59,8 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     //calc angular component of cmd_vel
     if(globalPlanIsSet_ && goalIsReached_ == false) {
         // costmap Global Frame ID = odom
-        // transform robot pose to geometry_msgs::Stamped
-        /*
-        tf::Stamped<tf::Pose> tempRobotPose;
-        costmap_ros_->getRobotPose(tempRobotPose); //frame id = odom
-        tf::poseStampedTFToMsg(tempRobotPose, robotPose_);
-        */
 
-        // transform global plan to odom frame
-        // TODO: check if transformation is working!
-        // ROS_INFO("gbl map frame id: %s", plan_.at(0).header.frame_id.c_str());
-        //tf::StampedTransform transform;
-        //tf_->lookupTransform("laser","map", ros::Time(0),transform);
+        // transformation from map to laser frame
         for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin(); it != plan_.end(); it++) {
             tf_->waitForTransform("laser", "map", it->header.stamp, ros::Duration(3.0));
             tf_->transformPose("laser", *it, *it);
@@ -79,38 +69,37 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
         /// calc steerAngle from trajectorie
         // TODO: which point from plan? depending on distance?
-        int point = minTargetPoint_; // which point first? distance?
-        //ROS_INFO("Distance: %f", calcDistance(plan_[0], plan_[point]));
-        // +/- M_PI/2? check!
-        while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.3){
-            point ++;
+        int point = 1; // which point first? distance?
+        while(calcDistance(plan_[0], plan_[point]) < minDistance_) {
+            point++;
         }
-        // debug
-        /*ROS_INFO("TLP: TPoint [%i]  x: %f y: %f z: %f w: %f",
-                 point,
-                 (float) plan_[point].pose.position.x,
-                 (float) plan_[point].pose.position.y,
-                 (float) plan_[point].pose.orientation.z,
-                 (float) plan_[point].pose.orientation.w);
-        */
-        //calc steering angle
+
+        // should angle decrease over distance?
+        while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.3){
+            point++;
+        }
+
+        // calc simple steering angle
         float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
 
         /// obstacle avoidance
+        // check if one laser point is in path
 
-        // check if one laser point
+        // analyzeLaserData earlier?
         analyzeLaserData(steerAngle);
+
         bool objectInPath = false;
         for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
             // returns true if one laser point is in path
             objectInPath = checkForObject(steerAngle, it->position.x, it->position.y);
-            if(objectInPath) break;
+            if(objectInPath) {
+                ROS_INFO("TLP: Object in path!");
+                break; //break for loop
+            }
         }
+
         // search for avoidance path
-
         if(objectInPath && doObstacleAvoidance_) {
-            ROS_INFO("TLP: Object in path!");
-
             int helper = 1;
             //steerAngle = 0; //for testing
             while(true) {
@@ -125,12 +114,12 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 }
                 // decide what to do
                 if(!objectLeft) {
-                    cmd_vel.angular.z = angleInc*0.3;
+                    cmd_vel.angular.z = angleInc; // which steering parameter?
                     ROS_INFO("TLP: Alternative: Left turn! Z: %f", (float) cmd_vel.angular.z);
                     break;
                 }
                 if(!objectRight) {
-                    cmd_vel.angular.z = angleDec*0.3;
+                    cmd_vel.angular.z = angleDec;
                     ROS_INFO("TLP: Alternative: Right turn! Z: %f",(float) cmd_vel.angular.z);
                     break;
                 }
@@ -143,35 +132,16 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             cmd_vel.linear.x = 0.2;
             //cmd_vel.angular.z = steerAngle*0.6; //remove!
         } else {
-            cmd_vel.angular.z = steerAngle*steeringAngleParameter_;
+            cmd_vel.angular.z = steerAngle*steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
             cmd_vel.linear.x = 0.2;
         }
     }
     return true;
-    // emergency stop
-    /*
-    bool stopCar = false;
-    for(int i = 0; i < 640; i++) {
-        //if one front laser scan distance < 0.5 turn off the engine
-        if(tlpLaserScan->ranges[i] < 0.0) {
-            stopCar = true;
-        }
-    }
-    if(stopCar) {
-        cmd_vel.linear.x = 0;
-        ROS_INFO("TLP: WARNING! Obstacle in front!");
-        return true;
-    } else {
-        //cmd_vel.linear.x = 1.1 - (cmd_vel.angular.z*M_PI)/4;
-        cmd_vel.linear.x = 0.2;
-	      return true;
-    }
-    */
 }
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
     //ROS_INFO("TLP: new global plan received! length: %i", (int) plan.size());
     globalPlanIsSet_ = true;
-    if(plan.size() < minTargetPoint_+5) {
+    if(calcDistance(plan_.front(), plan_.back()) < minDistance_) {
         goalIsReached_ = true;
     } else {
         goalIsReached_ = false;

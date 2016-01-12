@@ -50,7 +50,7 @@ private:
     double carwidth_;
     double wheelbase_;
     bool doObstacleAvoidance_;
-    int minTargetPoint_;
+    int minDistance_;
     double steeringAngleParameter_;
     double laserMaxDist_;
 
