@@ -7,11 +7,24 @@ PLUGINLIB_EXPORT_CLASS(tas_local_planner::LocalPlanner, nav_core::BaseLocalPlann
 
 using namespace std;
 
+laser_geometry::LaserProjection projector_;
+
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
-    tlpLaserScan = scan;
-    // ROS_INFO("Min angle: %f", (float) scan->angle_min);
-    // ROS_INFO("Max angle: %f", (float) scan->angle_max);
-    // ROS_INFO("Angle increment: %f", (float) scan->angle_increment);
+
+  // wait for transformation
+  if(!listener_.waitForTransform(
+        scan->header.frame_id,
+        "/base_link",
+        scan->header.stamp + ros::Duration().fromSec(scan->ranges.size()*scan->time_increment),
+        ros::Duration(1.0))){
+        return;
+  }
+
+  // transform laser data to point cloud(base_link)
+  sensor_msgs::PointCloud cloud;
+  projector_.transformLaserScanToPointCloud("/base_link",*scan, cloud,tf_);
+
+  // transform PointCloud point array to vector
 }
 
 
@@ -62,8 +75,8 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
         // transformation from map to laser frame
         for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin(); it != plan_.end(); it++) {
-            tf_->waitForTransform("laser", "map", it->header.stamp, ros::Duration(3.0));
-            tf_->transformPose("laser", *it, *it);
+            tf_->waitForTransform("/base_link", "/map", it->header.stamp, ros::Duration(3.0));
+            tf_->transformPose("/base_link", *it, *it);
         }
         // plan_ now in frame laser
 
@@ -157,8 +170,10 @@ void LocalPlanner::analyzeLaserData(float angle)
     //transform to vector form
     float r = abs(wheelbase_/tan(angle));
     laserDataTf_.clear();
+    int startLaserPoint = 50;
+    int endLaserPoint   = numberLaserPoints-50;
     int numberLaserPoints = (int) ( (abs(tlpLaserScan->angle_min) + abs(tlpLaserScan->angle_max))/tlpLaserScan->angle_increment);
-    for(int i = 100; i < numberLaserPoints-100; i++) {
+    for(int i = startLaserPoint; i < endLaserPoint; i++) {
         //max distance
         if(tlpLaserScan->ranges[i] < laserMaxDist_) {
             geometry_msgs::Pose newLaserPoint;
