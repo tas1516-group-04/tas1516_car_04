@@ -70,7 +70,7 @@ private:
     void analyzeLaserData(float angle);
     void tfRobotPose();
     float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b);
-    bool checkForObject(float angle, float x, float y);
+    bool checkForObject(float angle, float x, float y); // 0 not in path, 1 in path
     float calcAngle(float x, float y);
 
 };

@@ -99,7 +99,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         // analyzeLaserData earlier?
         // analyzeLaserData(steerAngle);
 
-        bool objectInPath = false;
+        int objectSize = 0;
         //        for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
         //            // returns true if one laser point is in path
         //            objectInPath = checkForObject(steerAngle, it->position.x, it->position.y);
@@ -110,16 +110,18 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         //        }
 
         for(std::vector<geometry_msgs::Point32>::iterator it = tlpLaserCloud.points.begin(); it != tlpLaserCloud.points.end(); it++){
-            // returns true if one laser point is in path
-            objectInPath = checkForObject(steerAngle, it->x, it->y);
-            if(objectInPath) {
-                ROS_INFO("TLP: Object in path!");
-                break; //break for loop
+            if(checkForObject(steerAngle, it->x, it->y)) {
+              objectSize++;
+            } else {
+              objectSize = 0;
             }
+
+            // break if object is big enough
+            if(objectSize > 5) break;
         }
 
         // search for avoidance path
-        if(objectInPath && doObstacleAvoidance_) {
+        if(objectSize > 5 && doObstacleAvoidance_) {
             int helper = 1;
             //steerAngle = 0; //for testing
             while(true) {
