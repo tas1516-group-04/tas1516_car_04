@@ -10,21 +10,19 @@ using namespace std;
 laser_geometry::LaserProjection projector_;
 
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
+    // tlpLaserScan = scan;
 
-  // wait for transformation
-  if(!listener_.waitForTransform(
-        scan->header.frame_id,
-        "/base_link",
-        scan->header.stamp + ros::Duration().fromSec(scan->ranges.size()*scan->time_increment),
-        ros::Duration(1.0))){
+    // wait for transformation
+    if(!tf_->waitForTransform(
+                scan->header.frame_id,
+                "/base_link",
+                scan->header.stamp + ros::Duration().fromSec(scan->ranges.size()*scan->time_increment),
+                ros::Duration(1.0))){
         return;
-  }
+    }
 
-  // transform laser data to point cloud(base_link)
-  sensor_msgs::PointCloud cloud;
-  projector_.transformLaserScanToPointCloud("/base_link",*scan, cloud,tf_);
-
-  // transform PointCloud point array to vector
+    // transform laser data to point cloud(base_link)
+    projector_.transformLaserScanToPointCloud("/base_link",*scan, tlpLaserCloud,*tf_);
 }
 
 
@@ -78,7 +76,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             tf_->waitForTransform("/base_link", "/map", it->header.stamp, ros::Duration(3.0));
             tf_->transformPose("/base_link", *it, *it);
         }
-        // plan_ now in frame laser
+        // plan_ now in base_link frame
 
         /// calc steerAngle from trajectorie
         // TODO: which point from plan? depending on distance?
@@ -99,12 +97,21 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         // check if one laser point is in path
 
         // analyzeLaserData earlier?
-        analyzeLaserData(steerAngle);
+        // analyzeLaserData(steerAngle);
 
         bool objectInPath = false;
-        for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
+        //        for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
+        //            // returns true if one laser point is in path
+        //            objectInPath = checkForObject(steerAngle, it->position.x, it->position.y);
+        //            if(objectInPath) {
+        //                ROS_INFO("TLP: Object in path!");
+        //                break; //break for loop
+        //            }
+        //        }
+
+        for(std::vector<geometry_msgs::Point32>::iterator it = tlpLaserCloud.points.begin(); it != tlpLaserCloud.points.end(); it++){
             // returns true if one laser point is in path
-            objectInPath = checkForObject(steerAngle, it->position.x, it->position.y);
+            objectInPath = checkForObject(steerAngle, it->x, it->y);
             if(objectInPath) {
                 ROS_INFO("TLP: Object in path!");
                 break; //break for loop
@@ -121,10 +128,17 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
                 float angleInc =  steerAngle + helper*0.05;
                 float angleDec =  steerAngle - helper*0.05;
-                for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
-                    objectLeft  = checkForObject(angleInc, it->position.x, it->position.y);
-                    objectRight = checkForObject(angleDec, it->position.x, it->position.y);
+
+                for(std::vector<geometry_msgs::Point32>::iterator it = tlpLaserCloud.points.begin(); it != tlpLaserCloud.points.end(); it++){
+                    objectLeft  = checkForObject(angleInc, it->x, it->y);
+                    objectRight = checkForObject(angleDec, it->x, it->y);
                 }
+
+                //                for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
+                //                    objectLeft  = checkForObject(angleInc, it->position.x, it->position.y);
+                //                    objectRight = checkForObject(angleDec, it->position.x, it->position.y);
+                //                }
+
                 // decide what to do
                 if(!objectLeft) {
                     cmd_vel.angular.z = angleInc; // which steering parameter?
@@ -170,9 +184,9 @@ void LocalPlanner::analyzeLaserData(float angle)
     //transform to vector form
     float r = abs(wheelbase_/tan(angle));
     laserDataTf_.clear();
+    int numberLaserPoints = (int) ( (abs(tlpLaserScan->angle_min) + abs(tlpLaserScan->angle_max))/tlpLaserScan->angle_increment);
     int startLaserPoint = 50;
     int endLaserPoint   = numberLaserPoints-50;
-    int numberLaserPoints = (int) ( (abs(tlpLaserScan->angle_min) + abs(tlpLaserScan->angle_max))/tlpLaserScan->angle_increment);
     for(int i = startLaserPoint; i < endLaserPoint; i++) {
         //max distance
         if(tlpLaserScan->ranges[i] < laserMaxDist_) {
