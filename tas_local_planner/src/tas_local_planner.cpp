@@ -159,6 +159,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             cmd_vel.linear.x = 0.2;
             //cmd_vel.angular.z = steerAngle*0.6; //remove!
         } else {
+            // steering parameters decreases over distance
             cmd_vel.angular.z = steerAngle*steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
             cmd_vel.linear.x = 0.2;
         }
