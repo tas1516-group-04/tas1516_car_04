@@ -121,19 +121,22 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         }
 
         // search for avoidance path
-        if(objectSize > 5 && doObstacleAvoidance_) {
+        if(objectSize > 0 && doObstacleAvoidance_) {
             int helper = 1;
             //steerAngle = 0; //for testing
             while(true) {
-                bool objectLeft = true;
-                bool objectRight = true;
+                // bool objectLeft = true;
+                // bool objectRight = true;
+                int objectLeftSize = 0;
+                int objectRightSize = 0;
 
                 float angleInc =  steerAngle + helper*0.05;
                 float angleDec =  steerAngle - helper*0.05;
 
                 for(std::vector<geometry_msgs::Point32>::iterator it = tlpLaserCloud.points.begin(); it != tlpLaserCloud.points.end(); it++){
-                    objectLeft  = checkForObject(angleInc, it->x, it->y);
-                    objectRight = checkForObject(angleDec, it->x, it->y);
+                    if(checkForObject(angleInc, it->x, it->y)) objectLeftSize++;
+                    if(checkForObject(angleDec, it->x, it->y)) objectRightSize++;
+                    if(objectLeftSize > 5 || objectRightSize > 5) break;
                 }
 
                 //                for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
@@ -142,12 +145,12 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 //                }
 
                 // decide what to do
-                if(!objectLeft) {
+                if(objectLeft < 6) {
                     cmd_vel.angular.z = angleInc; // which steering parameter?
                     ROS_INFO("TLP: Alternative: Left turn! Z: %f", (float) cmd_vel.angular.z);
                     break;
                 }
-                if(!objectRight) {
+                if(objectRight < 6) {
                     cmd_vel.angular.z = angleDec;
                     ROS_INFO("TLP: Alternative: Right turn! Z: %f",(float) cmd_vel.angular.z);
                     break;
