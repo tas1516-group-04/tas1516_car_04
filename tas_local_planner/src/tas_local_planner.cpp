@@ -145,12 +145,12 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 //                }
 
                 // decide what to do
-                if(objectLeft < 6) {
+                if(objectLeftSize < 6) {
                     cmd_vel.angular.z = angleInc; // which steering parameter?
                     ROS_INFO("TLP: Alternative: Left turn! Z: %f", (float) cmd_vel.angular.z);
                     break;
                 }
-                if(objectRight < 6) {
+                if(objectRightSize < 6) {
                     cmd_vel.angular.z = angleDec;
                     ROS_INFO("TLP: Alternative: Right turn! Z: %f",(float) cmd_vel.angular.z);
                     break;
