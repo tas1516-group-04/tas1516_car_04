@@ -17,12 +17,12 @@ using namespace std;
 #ifndef TAS_LOCAL_PLANNER_CPP
 #define TAS_LOCAL_PLANNER_CPP
 
+namespace tas_local_planner {
+
 sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
 sensor_msgs::PointCloud tlpLaserCloud;
 tf::TransformListener* tf_;
 bool useBaseLinkFrame_;
-
-namespace tas_local_planner {
 
 class LocalPlanner : public nav_core::BaseLocalPlanner
 {
@@ -43,7 +43,7 @@ private:
     double carwidth_;
     double wheelbase_;
     bool doObstacleAvoidance_;
-    int minDistance_;
+    double minDistance_;
     double steeringAngleParameter_;
     double laserMaxDist_;
     int minObjectSize_;
@@ -52,6 +52,7 @@ private:
     bool goalIsReached_;
     bool initialized_;
     bool globalPlanIsSet_;
+    double steerAngleOld_;
     costmap_2d::Costmap2DROS* costmap_ros_;
     ros::NodeHandle nodeHandle_;
     ros::Subscriber subScan_;
@@ -61,10 +62,6 @@ private:
 
     //laser
     std::vector<geometry_msgs::Pose> laserDataTf_;
-
-    //debug
-    std::ofstream debugFile_;
-
 
     // functions
     //void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
