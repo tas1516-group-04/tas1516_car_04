@@ -7,11 +7,21 @@ PLUGINLIB_EXPORT_CLASS(tas_local_planner::LocalPlanner, nav_core::BaseLocalPlann
 
 using namespace std;
 
+//Default Constructor
+namespace tas_local_planner {
+
 laser_geometry::LaserProjection projector_;
 
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
     if(!useBaseLinkFrame_) {
-        tlpLaserScan = scan;
+        if(!tf_->waitForTransform(
+                    scan->header.frame_id,
+                    "/laser",
+                    scan->header.stamp + ros::Duration().fromSec(scan->ranges.size()*scan->time_increment),
+                    ros::Duration(1.0))){
+            return;
+        }
+        projector_.transformLaserScanToPointCloud("/laser",*scan, tlpLaserCloud,*tf_);
     } else {
         // wait for transformation
         if(!tf_->waitForTransform(
@@ -27,10 +37,6 @@ void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
     }
 }
 
-
-//Default Constructor
-namespace tas_local_planner {
-
 LocalPlanner::LocalPlanner (){
 }
 
@@ -41,7 +47,7 @@ LocalPlanner::LocalPlanner(std::string name, tf::TransformListener* tf, costmap_
 void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros){
     if(!initialized_) {
         subScan_ = nodeHandle_.subscribe("scan", 1000, scanCallback);
-        pubTest_ = nodeHandle_.advertise<geometry_msgs::PoseArray>("test",1000);
+        pubTest_ = nodeHandle_.advertise<sensor_msgs::PointCloud>("test",1000);
         tf_ = tf;
         costmap_ros_ = costmap_ros;
         goalIsReached_ = false;
@@ -50,16 +56,15 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         nodeHandle_.param<double>("/move_base_node/car_width", carwidth_, 0.7);
         nodeHandle_.param<double>("/move_base_node/wheelbase", wheelbase_, 0.3);
         nodeHandle_.param<bool>("/move_base_node/obstacle_avoidance", doObstacleAvoidance_, false);
-        nodeHandle_.param<int>("/move_base_node/min_distance", minDistance_, 50);
+        nodeHandle_.param<double>("/move_base_node/min_distance", minDistance_, 0.3);
         nodeHandle_.param<double>("/move_base_node/steering_angle_parameter", steeringAngleParameter_, 0.6);
         nodeHandle_.param<double>("/move_base_node/laser_max_dist", laserMaxDist_, 2);
-        nodeHandle_.param<bool>("/move_base_node/use_base_link_frame", useBaseLinkFrame_, 0);
+        nodeHandle_.param<bool>("/move_base_node/use_base_link_frame", useBaseLinkFrame_, false);
         nodeHandle_.param<int>("/move_base_node/min_object_size", minObjectSize_, 1);
         if(doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance active!");
         if(!doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance inactive!");
-
-        //debug file
-        debugFile_.open("debug.txt");
+        if(useBaseLinkFrame_) ROS_INFO("TLP: Using base_link frame!");
+        if(!useBaseLinkFrame_) ROS_INFO("TLP: Using laser frame!");
 
         //finish initialization
         ROS_INFO("TAS LocalPlanner succesfully initialized!");
@@ -101,21 +106,20 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             if(point == plan_.size() - 1) break;
         }
 
+        ROS_INFO("TLP: Target Point: %i", point);
+
         // calc simple steering angle
-        float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
+        float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y)*
+                steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
 
-        /// obstacle avoidance
-        // check if one laser point is in path
-
-        // analyzeLaserData earlier?
-        // analyzeLaserData(steerAngle);
-
+        /// obstacle detection
         int objectSize = 0;
 
+        pubTest_.publish(tlpLaserCloud);
         if(!useBaseLinkFrame_) {
-            analyzeLaserData(steerAngle);
-            for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
-                if(checkForObject(steerAngle, it->position.x, it->position.y)) {
+            //            analyzeLaserData(steerAngle);
+            for(std::vector<geometry_msgs::Point32>::iterator it = tlpLaserCloud.points.begin(); it != tlpLaserCloud.points.end(); it++){
+                if(checkForObject(steerAngleOld_, it->x, it->y)) {
                     objectSize++;
                 } else {
                     objectSize = 0;
@@ -126,7 +130,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             }
         } else {
             for(std::vector<geometry_msgs::Point32>::iterator it = tlpLaserCloud.points.begin(); it != tlpLaserCloud.points.end(); it++){
-                if(checkForObject(steerAngle, it->x, it->y)) {
+                if(checkForObject(steerAngleOld_, it->x, it->y)) {
                     objectSize++;
                 } else {
                     objectSize = 0;
@@ -137,6 +141,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             }
         }
 
+        /// obstacle avoidance
         // search for avoidance path
         if(objectSize > 0 && doObstacleAvoidance_) {
             int helper = 1;
@@ -147,8 +152,10 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 int objectLeftSize = 0;
                 int objectRightSize = 0;
 
-                float angleInc =  steerAngle + helper*0.05;
-                float angleDec =  steerAngle - helper*0.05;
+                //                float angleInc =  steerAngle + helper*0.05;
+                //                float angleDec =  steerAngle - helper*0.05;
+                float angleInc = steerAngleOld_ + helper * 0.05;
+                float angleDec = steerAngleOld_ - helper * 0.05;
 
                 if(!useBaseLinkFrame_) {
                     for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
@@ -185,16 +192,22 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             //cmd_vel.angular.z = steerAngle*0.6; //remove!
         } else {
             // steering parameters decreases over distance
-            cmd_vel.angular.z = steerAngle*steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
+            cmd_vel.angular.z = steerAngle;
             cmd_vel.linear.x = 0.2;
         }
     }
+    steerAngleOld_ = cmd_vel.angular.z;
     return true;
 }
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
     //ROS_INFO("TLP: new global plan received! length: %i", (int) plan.size());
     globalPlanIsSet_ = true;
-    if(calcDistance(plan_.front(), plan_.back()) < minDistance_) {
+    //    if(calcDistance(plan_.front(), plan_.back()) < minDistance_) {
+    //        goalIsReached_ = true;
+    //    } else {
+    //        goalIsReached_ = false;
+    //    }
+    if(plan_.size() < 50) {
         goalIsReached_ = true;
     } else {
         goalIsReached_ = false;
@@ -228,7 +241,7 @@ void LocalPlanner::analyzeLaserData(float angle)
     poseArray.poses = laserDataTf_;
     //ROS_INFO("TLP: publish laserDataTf_ with size: %i", (int) poseArray.poses.size());
     //ROS_INFO("TLP: %i laser objects detected!", (int) laserObjects_.size());
-    pubTest_.publish(poseArray);
+    //pubTest_.publish(poseArray);
 }
 
 void LocalPlanner::tfRobotPose()
@@ -255,7 +268,11 @@ bool LocalPlanner::checkForObject(float angle, float x, float y) {
         // x^2 +(y-r-w/2)^2-r^2
         if(pow(x,2) + pow(y-r,2) - pow(r-carwidth_/2,2) >= 0 && pow(x,2) + pow(y-r,2) -pow(r+carwidth_/2,2) <= 0) {
             // return true if object in path
-            return true;
+            if(sqrt(pow(x,2)+pow(y,2)) < 1) {
+                return true;
+            } else {
+                return false;
+            }
         } else {
             // return false otherwise
             return false;
@@ -263,7 +280,11 @@ bool LocalPlanner::checkForObject(float angle, float x, float y) {
     } else {
         if(pow(x,2) + pow(y-r,2) - pow(r+carwidth_/2,2) >= 0 && pow(x,2) + pow(y-r,2) - pow(r-carwidth_/2,2) <= 0) {
             // return true if object in path
-            return true;
+            if(sqrt(pow(x,2)+pow(y,2)) < 1) {
+                return true;
+            } else {
+                return false;
+            }
         } else {
             // return false otherwise
             return false;
