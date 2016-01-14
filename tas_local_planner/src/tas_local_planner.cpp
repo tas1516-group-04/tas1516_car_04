@@ -10,19 +10,21 @@ using namespace std;
 laser_geometry::LaserProjection projector_;
 
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
-    // tlpLaserScan = scan;
+    if(!useBaseLinkFrame_) {
+        tlpLaserScan = scan;
+    } else {
+        // wait for transformation
+        if(!tf_->waitForTransform(
+                    scan->header.frame_id,
+                    "/base_link",
+                    scan->header.stamp + ros::Duration().fromSec(scan->ranges.size()*scan->time_increment),
+                    ros::Duration(1.0))){
+            return;
+        }
 
-    // wait for transformation
-    if(!tf_->waitForTransform(
-                scan->header.frame_id,
-                "/base_link",
-                scan->header.stamp + ros::Duration().fromSec(scan->ranges.size()*scan->time_increment),
-                ros::Duration(1.0))){
-        return;
+        // transform laser data to point cloud(base_link)
+        projector_.transformLaserScanToPointCloud("/base_link",*scan, tlpLaserCloud,*tf_);
     }
-
-    // transform laser data to point cloud(base_link)
-    projector_.transformLaserScanToPointCloud("/base_link",*scan, tlpLaserCloud,*tf_);
 }
 
 
@@ -51,6 +53,8 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         nodeHandle_.param<int>("/move_base_node/min_distance", minDistance_, 50);
         nodeHandle_.param<double>("/move_base_node/steering_angle_parameter", steeringAngleParameter_, 0.6);
         nodeHandle_.param<double>("/move_base_node/laser_max_dist", laserMaxDist_, 2);
+        nodeHandle_.param<bool>("/move_base_node/use_base_link_frame", useBaseLinkFrame_, 0);
+        nodeHandle_.param<int>("/move_base_node/min_object_size", minObjectSize_, 1);
         if(doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance active!");
         if(!doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance inactive!");
 
@@ -100,24 +104,30 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         // analyzeLaserData(steerAngle);
 
         int objectSize = 0;
-        //        for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
-        //            // returns true if one laser point is in path
-        //            objectInPath = checkForObject(steerAngle, it->position.x, it->position.y);
-        //            if(objectInPath) {
-        //                ROS_INFO("TLP: Object in path!");
-        //                break; //break for loop
-        //            }
-        //        }
 
-        for(std::vector<geometry_msgs::Point32>::iterator it = tlpLaserCloud.points.begin(); it != tlpLaserCloud.points.end(); it++){
-            if(checkForObject(steerAngle, it->x, it->y)) {
-              objectSize++;
-            } else {
-              objectSize = 0;
+        if(!useBaseLinkFrame_) {
+            analyzeLaserData(steerAngle);
+            for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
+                if(checkForObject(steerAngle, it->position.x, it->position.y)) {
+                    objectSize++;
+                } else {
+                    objectSize = 0;
+                }
+
+                // break if object is big enough
+                if(objectSize > minObjectSize_) break;
             }
+        } else {
+            for(std::vector<geometry_msgs::Point32>::iterator it = tlpLaserCloud.points.begin(); it != tlpLaserCloud.points.end(); it++){
+                if(checkForObject(steerAngle, it->x, it->y)) {
+                    objectSize++;
+                } else {
+                    objectSize = 0;
+                }
 
-            // break if object is big enough
-            if(objectSize > 5) break;
+                // break if object is big enough
+                if(objectSize > minObjectSize_) break;
+            }
         }
 
         // search for avoidance path
@@ -133,16 +143,19 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
                 float angleInc =  steerAngle + helper*0.05;
                 float angleDec =  steerAngle - helper*0.05;
 
-                for(std::vector<geometry_msgs::Point32>::iterator it = tlpLaserCloud.points.begin(); it != tlpLaserCloud.points.end(); it++){
-                    if(checkForObject(angleInc, it->x, it->y)) objectLeftSize++;
-                    if(checkForObject(angleDec, it->x, it->y)) objectRightSize++;
-                    if(objectLeftSize > 5 || objectRightSize > 5) break;
+                if(!useBaseLinkFrame_) {
+                    for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
+                        if(checkForObject(angleInc, it->position.x, it->position.y)) objectLeftSize++;
+                        if(checkForObject(angleDec, it->position.x, it->position.y)) objectRightSize++;
+                        if(objectLeftSize > 5 || objectRightSize > 5) break;
+                    }
+                } else {
+                    for(std::vector<geometry_msgs::Point32>::iterator it = tlpLaserCloud.points.begin(); it != tlpLaserCloud.points.end(); it++){
+                        if(checkForObject(angleInc, it->x, it->y)) objectLeftSize++;
+                        if(checkForObject(angleDec, it->x, it->y)) objectRightSize++;
+                        if(objectLeftSize > 5 || objectRightSize > 5) break;
+                    }
                 }
-
-                //                for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
-                //                    objectLeft  = checkForObject(angleInc, it->position.x, it->position.y);
-                //                    objectRight = checkForObject(angleDec, it->position.x, it->position.y);
-                //                }
 
                 // decide what to do
                 if(objectLeftSize < 6) {
