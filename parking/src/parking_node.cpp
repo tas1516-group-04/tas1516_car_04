@@ -161,6 +161,7 @@ int main(int argc, char** argv)
     // tf listener for robot position:
     // tf::TransformListener tf_listener;
 
+    // declare parameter variables
     double MAX_DIST,
             MIN_DIST,
             NUM_MEAN_SAMPLES,
@@ -224,6 +225,7 @@ int main(int argc, char** argv)
     }
     ROS_INFO("done");
 
+    // declare parking states
     enum states {INIT,
                  FIRST_CORNER_START,
                  FIRST_CORNER_END,
@@ -301,7 +303,13 @@ int main(int argc, char** argv)
         case FIRST_CORNER_START:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
+
+            // check if distance to first corner large enough for active angular controller
+            if (Front.half_left_dist >= ((MIN_GAP_DEPTH + MAX_GAP_DEPTH)/2.0) )
+                vel_msg.angular.z = angularControlP(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
+            else
+                // set steering angle to 0 if first corner is close
+                vel_msg.angular.z = 0;
             cmd_vel_pub.publish(vel_msg);
 
             // check if in range to detect first corner start
@@ -393,21 +401,12 @@ int main(int argc, char** argv)
             vel_msg.angular.z = - STEERING_FIRST;
             cmd_vel_pub.publish(vel_msg);
 
-
-            // TODO implement yaw support
-	    /*
-            if (abs((yaw - R.yaw)) >= YAW_THRESHOLD) {
-                ROS_INFO("Reached IMU YAW_THRESHOLD");
-                cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
-            }
-	    */
-
-            // check if first backward distance reached
+            // check if first backward distance or yaw threshold reached for vehicle rotation limit
             if (Back.middle_dist <= BACKWARD_THRESHOLD_1 || (abs((yaw - R.yaw)) >= YAW_THRESHOLD)) {
-		if (abs((yaw - R.yaw)) >= YAW_THRESHOLD) {
-                ROS_INFO("Reached IMU YAW_THRESHOLD");
-                cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
-            }
+                if (abs((yaw - R.yaw)) >= YAW_THRESHOLD) {
+                    ROS_INFO("Reached IMU YAW_THRESHOLD");
+                    cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
+                }
 
                 ROS_INFO("Back.middle_dist is in range for steering reversal point");
                 cout << "Back.middle_dist" << Back.middle_dist << endl;
@@ -486,7 +485,8 @@ int main(int argc, char** argv)
             cin >> input;
             if (input == 'y') {
                 ofstream myfile;
-                string fname = get_date() + "_yaw.txt";
+
+                string fname = get_date() + "_yaw.txt"; // create filename using current time and date
                 myfile.open(fname.c_str());
                 for (int i=0; i<yaw_vec.size(); i++) {
                     cout << yaw_vec[i] << endl;
