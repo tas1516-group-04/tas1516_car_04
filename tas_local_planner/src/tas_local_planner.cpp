@@ -77,8 +77,13 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
         // transformation from map to laser frame
         for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin(); it != plan_.end(); it++) {
-            tf_->waitForTransform("/base_link", "/map", it->header.stamp, ros::Duration(3.0));
-            tf_->transformPose("/base_link", *it, *it);
+            if(!useBaseLinkFrame_) {
+                tf_->waitForTransform("/laser", "/map", it->header.stamp, ros::Duration(3.0));
+                tf_->transformPose("/laser", *it, *it);
+            } else {
+                tf_->waitForTransform("/base_link", "/map", it->header.stamp, ros::Duration(3.0));
+                tf_->transformPose("/base_link", *it, *it);
+            }
         }
         // plan_ now in base_link frame
 
@@ -87,11 +92,13 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         int point = 1; // which point first? distance?
         while(calcDistance(plan_[0], plan_[point]) < minDistance_) {
             point++;
+            if(point == plan_.size() - 1) break;
         }
 
         // should angle decrease over distance?
         while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.3){
             point++;
+            if(point == plan_.size() - 1) break;
         }
 
         // calc simple steering angle
@@ -216,38 +223,6 @@ void LocalPlanner::analyzeLaserData(float angle)
         }
     }
 
-
-    /*
-    //calc direction
-    for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it!=laserDataTf_.end()-1; it++) {
-        float theta = atan2((it+1)->position.x-it->position.x, (it+1)->position.y-it->position.y) - M_PI/2;
-        it->orientation.w = sin(theta/2);
-        it->orientation.z = cos(theta/2);
-    }
-
-    laserObjects_.clear();
-    LaserObject newObject;
-    int helper = 0;
-    bool objectStarted = false;
-    for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it!=laserDataTf_.end()-1; it++) {
-        if(abs(acos(it->orientation.z) - acos((it+1)->orientation.z)) < 0.5) {
-            if(!objectStarted) {
-                newObject.start = helper;
-                objectStarted = true;
-            } else {
-                newObject.end = helper;
-            }
-        } else {
-            if(objectStarted && newObject.end - newObject.start > 10) {
-                laserObjects_.push_back(newObject);
-                objectStarted = false;
-            } else {
-                objectStarted = false;
-            }
-        }
-    }
-
-    */
     geometry_msgs::PoseArray poseArray;
     poseArray.header.frame_id = "laser";
     poseArray.poses = laserDataTf_;
