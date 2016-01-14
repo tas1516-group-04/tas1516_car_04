@@ -4,6 +4,7 @@
 #include <nav_core/base_local_planner.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
+#include <laser_geometry/laser_geometry.h>
 #include <angles/angles.h>
 #include <base_local_planner/world_model.h>
 #include <base_local_planner/costmap_model.h>
@@ -11,26 +12,15 @@
 #include <iostream>
 #include <fstream>
 
-using std::string;
+using namespace std;
 
 #ifndef TAS_LOCAL_PLANNER_CPP
 #define TAS_LOCAL_PLANNER_CPP
 
-// distance between the front and back wheels
-#define WHEELBASE 1
-
 sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
-
-enum LaserObjectType {
-    wall = 0,
-    obstacle = 1
-};
-
-struct LaserObject {
-    LaserObjectType type;
-    int start;
-    int end;
-};
+sensor_msgs::PointCloud tlpLaserCloud;
+tf::TransformListener* tf_;
+bool useBaseLinkFrame_;
 
 namespace tas_local_planner {
 
@@ -49,11 +39,19 @@ public:
 
 private:
 
+    //parameters
+    double carwidth_;
+    double wheelbase_;
+    bool doObstacleAvoidance_;
+    int minDistance_;
+    double steeringAngleParameter_;
+    double laserMaxDist_;
+    int minObjectSize_;
+
     //variables
     bool goalIsReached_;
     bool initialized_;
     bool globalPlanIsSet_;
-    tf::TransformListener* tf_;
     costmap_2d::Costmap2DROS* costmap_ros_;
     ros::NodeHandle nodeHandle_;
     ros::Subscriber subScan_;
@@ -63,7 +61,6 @@ private:
 
     //laser
     std::vector<geometry_msgs::Pose> laserDataTf_;
-    std::vector<LaserObject> laserObjects_;
 
     //debug
     std::ofstream debugFile_;
@@ -72,8 +69,11 @@ private:
     // functions
     //void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
     int makeDecision();
-    void analyzeLaserData();
+    void analyzeLaserData(float angle);
     void tfRobotPose();
+    float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b);
+    bool checkForObject(float angle, float x, float y); // 0 not in path, 1 in path
+    float calcAngle(float x, float y);
 
 };
 };
