@@ -11,6 +11,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <iostream>
 #include <fstream>
+#include "objectavoidance.h"
 
 using namespace std;
 
@@ -60,14 +61,15 @@ private:
     std::vector<geometry_msgs::PoseStamped> plan_;
     geometry_msgs::PoseStamped robotPose_;
 
+    //obstacle avoidance
+    ObjectAvoidance *objectAvoidance;
+
     //laser
     std::vector<geometry_msgs::Pose> laserDataTf_;
 
     // functions
     //void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
-    int makeDecision();
     void analyzeLaserData(float angle);
-    void tfRobotPose();
     float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b);
     bool checkForObject(float angle, float x, float y); // 0 not in path, 1 in path
     float calcAngle(float x, float y);
