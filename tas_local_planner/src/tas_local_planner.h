@@ -20,6 +20,7 @@ using namespace std;
 sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
 sensor_msgs::PointCloud tlpLaserCloud;
 tf::TransformListener* tf_;
+bool useBaseLinkFrame_;
 
 namespace tas_local_planner {
 
@@ -45,6 +46,7 @@ private:
     int minDistance_;
     double steeringAngleParameter_;
     double laserMaxDist_;
+    int minObjectSize_;
 
     //variables
     bool goalIsReached_;
