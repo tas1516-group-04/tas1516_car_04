@@ -111,7 +111,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         oldPoint = point;
 
         // calc simple steering angle
-        float steeringAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
+        double steeringAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
 
         /// obstacle avoidance
         if(doObstacleAvoidance_) {
