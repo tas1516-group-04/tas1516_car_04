@@ -126,7 +126,6 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         }
         cmd_vel.linear.x = 0.2;
     }
-    steerAngleOld_ = cmd_vel.angular.z;
     return true;
 }
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
@@ -171,7 +170,7 @@ float LocalPlanner::calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::P
 float LocalPlanner::calcAngle(float x, float y) {
     // radius from wheelbase and steerAngle
     if(y == 0) return 0;
-    float radius = pow(x,2)+pow(y,2)/(2*y);
+    float radius = (pow(x,2)+pow(y,2))/(2*y);
     return atan(wheelbase_/radius);
 }
 };
