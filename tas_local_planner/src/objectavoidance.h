@@ -11,8 +11,6 @@ public:
     double doObstacleAvoidance(double steeringAngle, sensor_msgs::PointCloud &laserPoints);
 
 private:
-    sensor_msgs::PointCloud *laserPCL;
-
     bool objectInPath(double steeringAngle, sensor_msgs::PointCloud &laserPoints);
     bool pointInPath(double x, double y, double angle);
     double getNewSteeringAngle(double steeringAngle, sensor_msgs::PointCloud &laserPoints);

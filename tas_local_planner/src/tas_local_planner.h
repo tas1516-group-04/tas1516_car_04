@@ -67,6 +67,9 @@ private:
     //laser
     std::vector<geometry_msgs::Pose> laserDataTf_;
 
+    //debugging
+    int oldPoint;
+
     // functions
     //void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
     void analyzeLaserData(float angle);

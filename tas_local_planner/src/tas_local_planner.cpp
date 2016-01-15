@@ -83,8 +83,18 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
     //calc angular component of cmd_vel
     if(globalPlanIsSet_ && goalIsReached_ == false) {
-        /// calc steerAngle from trajectorie
+        /// transform global plan
+        for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin(); it != plan_.end(); it++) {
+            if(!useBaseLinkFrame_) {
+                tf_->waitForTransform("/laser", "/map", it->header.stamp, ros::Duration(3.0));
+                tf_->transformPose("/laser", *it, *it);
+            } else {
+                tf_->waitForTransform("/base_link", "/map", it->header.stamp, ros::Duration(3.0));
+                tf_->transformPose("/base_link", *it, *it);
+            }
+        }
 
+        /// get target point
         int point = 1; // which point first? distance?
         while(calcDistance(plan_[0], plan_[point]) < minDistance_) {
             point++;
@@ -97,21 +107,24 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             if(point == plan_.size() - 1) break;
         }
 
-        ROS_INFO("TLP: Target Point: %i", point);
+        if(oldPoint != point) ROS_INFO("TLP: Target Point: %i", point);
+        oldPoint = point;
 
         // calc simple steering angle
-        float steerAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
+        float steeringAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
 
         /// obstacle avoidance
         if(doObstacleAvoidance_) {
-            cmd_vel.angular.z = objectAvoidance->doObstacleAvoidance(steerAngle, tlpLaserCloud)*
-                    steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
+//            cmd_vel.angular.z = objectAvoidance->doObstacleAvoidance(steeringAngle, tlpLaserCloud)*
+//                    steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
+            cmd_vel.angular.z = steeringAngle*steeringAngleParameter_;
         } else {
             // steering parameters decreases over distance
-            cmd_vel.angular.z = steerAngle *
-                    steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
-            cmd_vel.linear.x = 0.2;
+//            cmd_vel.angular.z = steeringAngle *
+//                    steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
+            cmd_vel.angular.z = steeringAngle*steeringAngleParameter_;
         }
+        cmd_vel.linear.x = 0.2;
     }
     steerAngleOld_ = cmd_vel.angular.z;
     return true;
@@ -121,15 +134,6 @@ bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) 
     if(plan_.size() < 50) {
         goalIsReached_ = true;
     } else {
-        for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin(); it != plan_.end(); it++) {
-            if(!useBaseLinkFrame_) {
-                tf_->waitForTransform("/laser", "/map", it->header.stamp, ros::Duration(3.0));
-                tf_->transformPose("/laser", *it, *it);
-            } else {
-                tf_->waitForTransform("/base_link", "/map", it->header.stamp, ros::Duration(3.0));
-                tf_->transformPose("/base_link", *it, *it);
-            }
-        }
         goalIsReached_ = false;
     }
     plan_ = plan;

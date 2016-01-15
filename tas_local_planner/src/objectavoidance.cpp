@@ -9,23 +9,24 @@ ObjectAvoidance::ObjectAvoidance(double wheelbase, double carwidth) :
 double ObjectAvoidance::doObstacleAvoidance(double steeringAngle, sensor_msgs::PointCloud& laserPoints)
 {
     if(objectInPath(steeringAngle, laserPoints)) {
+        ROS_INFO("TLP: Object in path!");
         return getNewSteeringAngle(steeringAngle, laserPoints);
-         ROS_INFO("TLP: Object in path!");
     } else {
-        ROS_INFO("TLP: No object in path!");
+        return steeringAngle;
     }
 }
 
 bool ObjectAvoidance::objectInPath(double steeringAngle, sensor_msgs::PointCloud& laserPoints)
 {
     int consecutivePointsInPath = 0;
-    for(std::vector<geometry_msgs::Point32>::iterator it = laserPCL->points.begin(); it != laserPCL->points.end(); it++){
-        if(pointInPath(it->x, it->y, steeringAngle) && pow(it->x,2) + pow(it->y,2) < 1) {
+    for(std::vector<geometry_msgs::Point32>::iterator it = laserPoints.points.begin(); it != laserPoints.points.end(); it++){
+        // point has to be in path and in range
+        if(pointInPath(it->x, it->y, steeringAngle) && pow(it->x,2) + pow(it->y,2) < 1.5) {
             consecutivePointsInPath++;
         } else {
             consecutivePointsInPath = 0;
         }
-        if(consecutivePointsInPath > 10) return true;
+        if(consecutivePointsInPath > 8) return true;
     }
     return false;
 }
@@ -55,9 +56,9 @@ bool ObjectAvoidance::pointInPath(double x, double y, double angle)
 
 double ObjectAvoidance::getNewSteeringAngle(double steeringAngle, sensor_msgs::PointCloud& laserPoints)
 {
-    for(int i = 1; i < 11; i++) {
-        float angleInc = steeringAngle + i * 0.05;
-        float angleDec = steeringAngle - i * 0.05;
+    for(int i = 1; i < 100; i++) {
+        float angleInc = steeringAngle + i * 0.01;
+        float angleDec = steeringAngle - i * 0.01;
 
         // decide what to do
         if(!objectInPath(angleInc, laserPoints)) {
