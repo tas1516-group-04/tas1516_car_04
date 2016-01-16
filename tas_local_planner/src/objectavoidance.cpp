@@ -33,13 +33,12 @@ bool ObjectAvoidance::objectInPath(double steeringAngle, sensor_msgs::PointCloud
 
 bool ObjectAvoidance::pointInPath(double x, double y, double angle)
 {
-    double r = wheelbase_/tan(angle);
-    double maxRange = 1/(1+r)*(0.3 - 1)+1;
+    double maxRange = 1.5;
     double range = sqrt(pow(x,2) + pow(y,2));
-    if(r > 0) {
-        // x^2 +(y-r-w/2)^2-r^2
-        if(pow(x,2) + pow(y-r,2) - pow(r-carwidth_/2,2) >= 0
-                && pow(x,2) + pow(y-r,2) -pow(r+carwidth_/2,2) <= 0
+    if(yM > 0) {
+        // x^2 +(-r-w/2)^2-r^2
+        if(pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius-carwidth_/2,2) >= 0
+                && pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius+carwidth_/2,2) <= 0
                 && range < maxRange) {
             // return true if point in path
             return true;
@@ -48,8 +47,8 @@ bool ObjectAvoidance::pointInPath(double x, double y, double angle)
             return false;
         }
     } else {
-        if(pow(x,2) + pow(y-r,2) - pow(r+carwidth_/2,2) >= 0
-                && pow(x,2) + pow(y-r,2) - pow(r-carwidth_/2,2) <= 0
+        if(pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius+carwidth_/2,2) >= 0
+                && pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius-carwidth_/2,2) <= 0
                 && range < maxRange) {
             // return true if point in path
             return true;

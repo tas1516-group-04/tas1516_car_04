@@ -173,10 +173,14 @@ float LocalPlanner::calcAngle(float x, float y) {
 
     // calc circle center
     double xM = (-1)*wheelbase_;
-    double yM = (pow(x+wheelbase_,2)+pow(y,2) - pow(wheelbase,2))/(2*y);
+    double yM = (pow(x+wheelbase_,2)+pow(y,2) - pow(wheelbase_,2))/(2*y);
 
     // calc radius
     double radius = sqrt(pow(xM,2) + pow(yM,2));
+
+    // give object avoidance information
+    objectAvoidance->radius = radius;
+    objectAvoidance->yM = yM;
 
     // calc steering angle
     double angle = M_PI/2 - sin(wheelbase_/radius);

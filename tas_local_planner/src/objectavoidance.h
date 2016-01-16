@@ -3,12 +3,14 @@
 
 #include <laser_geometry/laser_geometry.h>
 
-
 class ObjectAvoidance
 {
 public:
     ObjectAvoidance(double wheelbase, double carwidth);
     double doObstacleAvoidance(double steeringAngle, sensor_msgs::PointCloud &laserPoints);
+
+    double radius;
+    double yM;
 
 private:
     bool objectInPath(double steeringAngle, sensor_msgs::PointCloud &laserPoints);

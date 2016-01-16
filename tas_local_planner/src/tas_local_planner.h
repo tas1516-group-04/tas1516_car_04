@@ -25,6 +25,11 @@ sensor_msgs::PointCloud tlpLaserCloud;
 tf::TransformListener* tf_;
 bool useBaseLinkFrame_;
 
+struct Circle{
+    double y;
+    double r;
+};
+
 class LocalPlanner : public nav_core::BaseLocalPlanner
 {
 public:
@@ -60,6 +65,7 @@ private:
     ros::Publisher pubTest_;
     std::vector<geometry_msgs::PoseStamped> plan_;
     geometry_msgs::PoseStamped robotPose_;
+    Circle steeringCircle;
 
     //obstacle avoidance
     ObjectAvoidance *objectAvoidance;
