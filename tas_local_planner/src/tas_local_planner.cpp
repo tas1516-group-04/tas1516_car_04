@@ -53,7 +53,7 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         goalIsReached_ = false;
 
         //parameters
-        nodeHandle_.param<double>("/move_base_node/car_width", carwidth_, 0.7);
+        nodeHandle_.param<double>("/move_base_node/car_width", carwidth_, 0.3);
         nodeHandle_.param<double>("/move_base_node/wheelbase", wheelbase_, 0.3);
         nodeHandle_.param<bool>("/move_base_node/obstacle_avoidance", doObstacleAvoidance_, false);
         nodeHandle_.param<double>("/move_base_node/min_distance", minDistance_, 0.3);
