@@ -34,6 +34,8 @@ bool ObjectAvoidance::objectInPath(double steeringAngle, sensor_msgs::PointCloud
 bool ObjectAvoidance::pointInPath(double x, double y, double angle)
 {
     double r = wheelbase_/tan(angle);
+    double maxRange = 1/(1+r)*(0.3 - 1)+1;
+    double range = sqrt(pow(x,2) + pow(y,2));
     if(r > 0) {
         // x^2 +(y-r-w/2)^2-r^2
         if(pow(x,2) + pow(y-r,2) - pow(r-carwidth_/2,2) >= 0 && pow(x,2) + pow(y-r,2) -pow(r+carwidth_/2,2) <= 0) {
