@@ -35,27 +35,14 @@ bool ObjectAvoidance::pointInPath(double x, double y, double angle)
 {
     double maxRange = 1.5;
     double range = sqrt(pow(x,2) + pow(y,2));
-    if(yM > 0) {
-        // x^2 +(-r-w/2)^2-r^2
-        if(pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius-carwidth_/2,2) >= 0
-                && pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius+carwidth_/2,2) <= 0
-                && range < maxRange) {
-            // return true if point in path
-            return true;
-        } else {
-            // return false otherwise
-            return false;
-        }
+    if(pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius-carwidth_/2,2) >= 0
+            && pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius+carwidth_/2,2) <= 0
+            && range < maxRange) {
+        // return true if point in path
+        return true;
     } else {
-        if(pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius+carwidth_/2,2) >= 0
-                && pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius-carwidth_/2,2) <= 0
-                && range < maxRange) {
-            // return true if point in path
-            return true;
-        } else {
-            // return false otherwise
-            return false;
-        }
+        // return false otherwise
+        return false;
     }
 }
 
