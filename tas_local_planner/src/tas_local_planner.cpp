@@ -170,7 +170,21 @@ float LocalPlanner::calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::P
 float LocalPlanner::calcAngle(float x, float y) {
     // radius from wheelbase and steerAngle
     if(y == 0) return 0;
-    float radius = (pow(x,2)+pow(y,2))/(2*y);
-    return atan(wheelbase_/radius);
+
+    // calc circle center
+    double xM = (-1)*wheelbase_;
+    double yM = (pow(x+wheelbase_,2)+pow(y,2) - pow(wheelbase_,2))/(2*y);
+
+    // calc radius
+    double radius = sqrt(pow(xM,2) + pow(yM,2));
+
+    // give object avoidance information
+    objectAvoidance->radius = radius;
+    objectAvoidance->yM = yM;
+
+    // calc steering angle
+    double angle = M_PI/2 - acos(wheelbase_/radius);
+    if(yM < 0) angle = angle*(-1);
+    return angle;
 }
 };
