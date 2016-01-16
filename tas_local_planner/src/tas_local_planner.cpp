@@ -53,7 +53,7 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         goalIsReached_ = false;
 
         //parameters
-        nodeHandle_.param<double>("/move_base_node/car_width", carwidth_, 0.7);
+        nodeHandle_.param<double>("/move_base_node/car_width", carwidth_, 0.3);
         nodeHandle_.param<double>("/move_base_node/wheelbase", wheelbase_, 0.3);
         nodeHandle_.param<bool>("/move_base_node/obstacle_avoidance", doObstacleAvoidance_, false);
         nodeHandle_.param<double>("/move_base_node/min_distance", minDistance_, 0.3);
@@ -111,7 +111,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         oldPoint = point;
 
         // calc simple steering angle
-        float steeringAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
+        double steeringAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
 
         /// obstacle avoidance
         if(doObstacleAvoidance_) {
@@ -126,7 +126,6 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         }
         cmd_vel.linear.x = 0.2;
     }
-    steerAngleOld_ = cmd_vel.angular.z;
     return true;
 }
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
@@ -171,7 +170,7 @@ float LocalPlanner::calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::P
 float LocalPlanner::calcAngle(float x, float y) {
     // radius from wheelbase and steerAngle
     if(y == 0) return 0;
-    float radius = pow(x,2)+pow(y,2)/(2*y);
+    float radius = (pow(x,2)+pow(y,2))/(2*y);
     return atan(wheelbase_/radius);
 }
 };
