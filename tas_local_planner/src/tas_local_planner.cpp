@@ -183,7 +183,7 @@ float LocalPlanner::calcAngle(float x, float y) {
     objectAvoidance->yM = yM;
 
     // calc steering angle
-    double angle = M_PI/2 - sin(wheelbase_/radius);
+    double angle = M_PI/2 - acos(wheelbase_/radius);
     if(yM < 0) angle = angle*(-1);
     return angle;
 }
