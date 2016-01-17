@@ -72,13 +72,20 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             if(point == plan_.size() - 1) break;
         }
 
-        if(oldPoint != point) ROS_INFO("TLP: Target Point: %i", point);
-        oldPoint = point;
-
         // calc simple steering angle
         double steeringAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
 
+        if(oldPoint != point) {
+            ROS_INFO("TLP: T.P. %i | x: %f | y: %f | a: %f",
+                     point,
+                     plan_[point].pose.position.x,
+                     plan_[point].pose.position.y,
+                     steeringAngle);
+        }
+        oldPoint = point;
+
         /// obstacle avoidance
+        pubTest_.publish(objectAvoidance->laserPoints);
         if(doObstacleAvoidance_) {
             //            cmd_vel.angular.z = objectAvoidance->doObstacleAvoidance(steeringAngle, tlpLaserCloud)*
             //                    steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));

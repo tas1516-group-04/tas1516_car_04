@@ -26,6 +26,8 @@ public:
     double radius;
     double yM;
 
+    sensor_msgs::PointCloud laserPoints;
+
 private:
     bool objectInPath(double steeringAngle);
     bool pointInPath(double x, double y, double angle);
@@ -36,7 +38,6 @@ private:
     double wheelbase_;
     double carwidth_;
 
-    sensor_msgs::PointCloud laserPoints;
 };
 
 #endif // OBJECTAVOIDANCE_H
