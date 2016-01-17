@@ -10,33 +10,6 @@ using namespace std;
 //Default Constructor
 namespace tas_local_planner {
 
-void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
-    laser_geometry::LaserProjection projector_;
-
-    if(!useBaseLinkFrame_) {
-        if(!tf_->waitForTransform(
-                    scan->header.frame_id,
-                    "/laser",
-                    scan->header.stamp + ros::Duration().fromSec(scan->ranges.size()*scan->time_increment),
-                    ros::Duration(1.0))){
-            return;
-        }
-        projector_.transformLaserScanToPointCloud("/laser",*scan, tlpLaserCloud,*tf_);
-    } else {
-        // wait for transformation
-        if(!tf_->waitForTransform(
-                    scan->header.frame_id,
-                    "/base_link",
-                    scan->header.stamp + ros::Duration().fromSec(scan->ranges.size()*scan->time_increment),
-                    ros::Duration(1.0))){
-            return;
-        }
-
-        // transform laser data to point cloud(base_link)
-        projector_.transformLaserScanToPointCloud("/base_link",*scan, tlpLaserCloud,*tf_);
-    }
-}
-
 LocalPlanner::LocalPlanner (){
 }
 
@@ -46,7 +19,10 @@ LocalPlanner::LocalPlanner(std::string name, tf::TransformListener* tf, costmap_
 
 void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros){
     if(!initialized_) {
-        subScan_ = nodeHandle_.subscribe("scan", 1000, scanCallback);
+        //classes
+        objectAvoidance = new ObjectAvoidance(wheelbase_, carwidth_, tf);
+
+        subScan_ = nodeHandle_.subscribe("scan", 1000, &ObjectAvoidance::scanCallback, objectAvoidance);
         pubTest_ = nodeHandle_.advertise<sensor_msgs::PointCloud>("test",1000);
         tf_ = tf;
         costmap_ros_ = costmap_ros;
@@ -59,17 +35,11 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         nodeHandle_.param<double>("/move_base_node/min_distance", minDistance_, 0.3);
         nodeHandle_.param<double>("/move_base_node/steering_angle_parameter", steeringAngleParameter_, 0.6);
         nodeHandle_.param<double>("/move_base_node/laser_max_dist", laserMaxDist_, 2);
-        nodeHandle_.param<bool>("/move_base_node/use_base_link_frame", useBaseLinkFrame_, false);
         nodeHandle_.param<int>("/move_base_node/min_object_size", minObjectSize_, 1);
 
         //output parameter
         if(doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance active!");
         if(!doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance inactive!");
-        if(useBaseLinkFrame_) ROS_INFO("TLP: Using base_link frame!");
-        if(!useBaseLinkFrame_) ROS_INFO("TLP: Using laser frame!");
-
-        //classes
-        objectAvoidance = new ObjectAvoidance(wheelbase_, carwidth_);
 
         //finish initialization
         ROS_INFO("TAS LocalPlanner succesfully initialized!");
@@ -85,13 +55,8 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     if(globalPlanIsSet_ && goalIsReached_ == false) {
         /// transform global plan
         for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin(); it != plan_.end(); it++) {
-            if(!useBaseLinkFrame_) {
-                tf_->waitForTransform("/laser", "/map", it->header.stamp, ros::Duration(3.0));
-                tf_->transformPose("/laser", *it, *it);
-            } else {
-                tf_->waitForTransform("/base_link", "/map", it->header.stamp, ros::Duration(3.0));
-                tf_->transformPose("/base_link", *it, *it);
-            }
+            tf_->waitForTransform("/laser", "/map", it->header.stamp, ros::Duration(3.0));
+            tf_->transformPose("/laser", *it, *it);
         }
 
         /// get target point
@@ -115,13 +80,13 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
         /// obstacle avoidance
         if(doObstacleAvoidance_) {
-//            cmd_vel.angular.z = objectAvoidance->doObstacleAvoidance(steeringAngle, tlpLaserCloud)*
-//                    steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
-            cmd_vel.angular.z = steeringAngle*steeringAngleParameter_;
+            //            cmd_vel.angular.z = objectAvoidance->doObstacleAvoidance(steeringAngle, tlpLaserCloud)*
+            //                    steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
+            cmd_vel.angular.z = objectAvoidance->doObstacleAvoidance(steeringAngle)*steeringAngleParameter_;
         } else {
             // steering parameters decreases over distance
-//            cmd_vel.angular.z = steeringAngle *
-//                    steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
+            //            cmd_vel.angular.z = steeringAngle *
+            //                    steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
             cmd_vel.angular.z = steeringAngle*steeringAngleParameter_;
         }
         cmd_vel.linear.x = 0.2;
@@ -139,25 +104,6 @@ bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) 
 }
 bool LocalPlanner::isGoalReached() {
     return goalIsReached_;
-}
-
-void LocalPlanner::analyzeLaserData(float angle)
-{
-    //transform to vector form
-    float r = abs(wheelbase_/tan(angle));
-    laserDataTf_.clear();
-    int numberLaserPoints = (int) ( (abs(tlpLaserScan->angle_min) + abs(tlpLaserScan->angle_max))/tlpLaserScan->angle_increment);
-    int startLaserPoint = 50;
-    int endLaserPoint   = numberLaserPoints-50;
-    for(int i = startLaserPoint; i < endLaserPoint; i++) {
-        //max distance
-        if(tlpLaserScan->ranges[i] < laserMaxDist_) {
-            geometry_msgs::Pose newLaserPoint;
-            newLaserPoint.position.x = cos(tlpLaserScan->angle_min + tlpLaserScan->angle_increment*i)*tlpLaserScan->ranges[i];
-            newLaserPoint.position.y = sin(tlpLaserScan->angle_min + tlpLaserScan->angle_increment*i)*tlpLaserScan->ranges[i];
-            laserDataTf_.push_back(newLaserPoint);
-        }
-    }
 }
 
 // distance between two PoseStamped poses

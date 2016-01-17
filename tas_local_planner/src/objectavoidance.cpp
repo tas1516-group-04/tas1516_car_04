@@ -1,22 +1,23 @@
 #include "objectavoidance.h"
 
-ObjectAvoidance::ObjectAvoidance(double wheelbase, double carwidth) :
+ObjectAvoidance::ObjectAvoidance(double wheelbase, double carwidth, tf::TransformListener* tf) :
     wheelbase_(wheelbase),
-    carwidth_(carwidth)
+    carwidth_(carwidth),
+    tf_(tf)
 {
 }
 
-double ObjectAvoidance::doObstacleAvoidance(double steeringAngle, sensor_msgs::PointCloud& laserPoints)
+double ObjectAvoidance::doObstacleAvoidance(double steeringAngle)
 {
-    if(objectInPath(steeringAngle, laserPoints)) {
+    if(objectInPath(steeringAngle)) {
         ROS_INFO("TLP: Object in path!");
-        return getNewSteeringAngle(steeringAngle, laserPoints);
+        return getNewSteeringAngle(steeringAngle);
     } else {
         return steeringAngle;
     }
 }
 
-bool ObjectAvoidance::objectInPath(double steeringAngle, sensor_msgs::PointCloud& laserPoints)
+bool ObjectAvoidance::objectInPath(double steeringAngle)
 {
     int consecutivePointsInPath = 0;
     for(std::vector<geometry_msgs::Point32>::iterator it = laserPoints.points.begin(); it != laserPoints.points.end(); it++){
@@ -46,21 +47,34 @@ bool ObjectAvoidance::pointInPath(double x, double y, double angle)
     }
 }
 
-double ObjectAvoidance::getNewSteeringAngle(double steeringAngle, sensor_msgs::PointCloud& laserPoints)
+double ObjectAvoidance::getNewSteeringAngle(double steeringAngle)
 {
     for(int i = 1; i < 100; i++) {
         float angleInc = steeringAngle + i * 0.01;
         float angleDec = steeringAngle - i * 0.01;
 
         // decide what to do
-        if(!objectInPath(angleInc, laserPoints)) {
+        if(!objectInPath(angleInc)) {
             ROS_INFO("TLP: Alternative: Left turn! Z: %f", (float) angleInc);
             return angleInc; // which steering parameter?
         }
-        if(!objectInPath(angleDec, laserPoints)) {
+        if(!objectInPath(angleDec)) {
             ROS_INFO("TLP: Alternative: Right turn! Z: %f",(float) angleDec);
             return angleDec;
         }
     }
     return steeringAngle;
+}
+
+void ObjectAvoidance::scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
+{
+    laser_geometry::LaserProjection projector_;
+    if(!tf_->waitForTransform(
+                scan->header.frame_id,
+                "/laser",
+                scan->header.stamp + ros::Duration().fromSec(scan->ranges.size()*scan->time_increment),
+                ros::Duration(1.0))){
+        return;
+    }
+    projector_.transformLaserScanToPointCloud("/laser",*scan, laserPoints,*tf_);
 }
