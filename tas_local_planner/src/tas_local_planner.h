@@ -21,9 +21,6 @@ using namespace std;
 namespace tas_local_planner {
 
 sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
-sensor_msgs::PointCloud tlpLaserCloud;
-tf::TransformListener* tf_;
-bool useBaseLinkFrame_;
 
 struct Circle{
     double y;
@@ -62,6 +59,7 @@ private:
     costmap_2d::Costmap2DROS* costmap_ros_;
     ros::NodeHandle nodeHandle_;
     ros::Subscriber subScan_;
+    tf::TransformListener* tf_;
     ros::Publisher pubTest_;
     std::vector<geometry_msgs::PoseStamped> plan_;
     geometry_msgs::PoseStamped robotPose_;
@@ -77,8 +75,6 @@ private:
     int oldPoint;
 
     // functions
-    //void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
-    void analyzeLaserData(float angle);
     float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b);
     bool checkForObject(float angle, float x, float y); // 0 not in path, 1 in path
     float calcAngle(float x, float y);

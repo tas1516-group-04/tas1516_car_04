@@ -2,7 +2,6 @@
   car_width: 0.3
   wheelbase: 0.3
   obstacle_avoidance: true
-  min_distance: 0.4
+  min_distance: 0.8
   steering_angle_parameter: 1
-  use_base_link_frame: false
   min_object_size: 5
