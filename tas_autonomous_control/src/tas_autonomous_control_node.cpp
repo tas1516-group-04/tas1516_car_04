@@ -29,8 +29,8 @@ int main(int argc, char** argv)
                 // ROS_INFO("Automatic Control!");
                 if(autonomous_control.cmd_linearVelocity>0)
                 {
-                    std::cout << "vel_cmd: " << autonomous_control.vel_linearVelocity << std::endl;
-                    std::cout << "cmd_vel: " << autonomous_control.cmd_linearVelocity << std::endl;
+                    // std::cout << "vel_cmd: " << autonomous_control.vel_linearVelocity << std::endl;
+                    // std::cout << "cmd_vel: " << autonomous_control.cmd_linearVelocity << std::endl;
                     if (autonomous_control.cmd_angularVelocity == 101)
                     {
                         // SpeedController will send -1 when no speed can be calculated.
@@ -44,12 +44,12 @@ int main(int argc, char** argv)
                             std::cout << "SpeedController Error -1" << std::endl;
                             autonomous_control.control_servo.x = 1500;
                         }
-                        std::cout << "Servo_controller: " << autonomous_control.control_servo.x << std::endl;
+                        // std::cout << "Servo_controller: " << autonomous_control.control_servo.x << std::endl;
                     }
                     else
                     {
-                        autonomous_control.control_servo.x = 1550;
-                        std::cout << "Servo_planner: " << autonomous_control.control_servo.x << std::endl;
+                        autonomous_control.control_servo.x = 1555;
+                        // std::cout << "Servo_planner: " << autonomous_control.control_servo.x << std::endl;
                     }
 
                     // clip cmd_vel between [0,1]
