@@ -32,7 +32,7 @@ void SpeedController::set_parameters(ros::NodeHandle &node_handle)
 }
 
 double SpeedController::calcSpeed()
-{
+{ 
     return calcCurveWeightSimple();
 }
 
@@ -162,7 +162,7 @@ double SpeedController::calcCurveWeightSimple()
             {
                 longAngle = fabs(calcAngle(current_path[0], current_path[i]))*180/M_PI;
                 longValid = true;
-                std::cout << " longAngle: " << longAngle << " accDist: " << accumulatedDistance <<  std::endl;
+                std::cout << " longAngle: " << longAngle << std::endl;
                 break;
             }
             else // Short threshold reached - switch to larger threshold
@@ -170,7 +170,7 @@ double SpeedController::calcCurveWeightSimple()
                 threshold = longDist;
                 shortAngle = fabs(calcAngle(current_path[0], current_path[i]))*180/M_PI;
                 shortValid = true;
-                std::cout << " shortAngle: " << shortAngle << " accDist: " << accumulatedDistance <<  std::endl;
+                std::cout << " shortAngle: " << shortAngle << std::endl;
             }
         }
     }
@@ -178,7 +178,6 @@ double SpeedController::calcCurveWeightSimple()
     if (shortValid)
     {
         weight += 0.5 * clip(shortAngle, 0.01, maxShort)/maxShort;
-        std::cout << "s " << weight << std::endl;
         if (longValid)
         {
             weight += 0.5 * clip(longAngle, 0.01, maxLong)/maxLong;
@@ -187,7 +186,8 @@ double SpeedController::calcCurveWeightSimple()
         {
             weight += 0.5;
         }
-        std::cout << "g " << weight << std::endl;
+        std::cout << "weight: " << weight << std::endl;
+        std::cout << "speed: " << 1550 + 10 * weight << std::endl;
         return weight;
     }
     else
