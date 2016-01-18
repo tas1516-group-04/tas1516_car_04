@@ -184,10 +184,10 @@ double SpeedController::calcCurveWeightSimple()
         }
         else
         {
-            weight += 0.5;
+            weight += weight;
         }
         std::cout << "weight: " << weight << std::endl;
-        std::cout << "speed: " << 1550 + 10 * weight << std::endl;
+        std::cout << "speed: " << 1580 - 20 * weight << std::endl;
         return weight;
     }
     else

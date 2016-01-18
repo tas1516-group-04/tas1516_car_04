@@ -31,13 +31,13 @@ int main(int argc, char** argv)
                 {
                     // std::cout << "vel_cmd: " << autonomous_control.vel_linearVelocity << std::endl;
                     // std::cout << "cmd_vel: " << autonomous_control.cmd_linearVelocity << std::endl;
-                    if (autonomous_control.cmd_angularVelocity == 101)
+                    if (autonomous_control.cmd_linearVelocity == 101.0)
                     {
                         // SpeedController will send -1 when no speed can be calculated.
                         if (autonomous_control.vel_linearVelocity != -1)
                         {
                             // vel_linearVelocity will be between 0 and 1
-                            autonomous_control.control_servo.x = 1550 + 10 * autonomous_control.vel_linearVelocity;
+                            autonomous_control.control_servo.x = 1580 - 20 * autonomous_control.vel_linearVelocity;
                         }
                         else
                         {
@@ -48,7 +48,7 @@ int main(int argc, char** argv)
                     }
                     else
                     {
-                        autonomous_control.control_servo.x = 1555;
+                        autonomous_control.control_servo.x = 1580;
                         // std::cout << "Servo_planner: " << autonomous_control.control_servo.x << std::endl;
                     }
 
