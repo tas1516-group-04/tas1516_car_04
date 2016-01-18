@@ -20,7 +20,6 @@ double ObjectAvoidance::doObstacleAvoidance(double steeringAngle)
 bool ObjectAvoidance::objectInPath(double steeringAngle)
 {
     int consecutivePointsInPath = 0;
-    /*
     for(std::vector<geometry_msgs::Point32>::iterator it = laserPoints.points.begin(); it != laserPoints.points.end(); it++){
         // point has to be in path and in range
         if(pointInPath(it->x, it->y, steeringAngle) && pow(it->x,2) + pow(it->y,2) < 1.5) {
@@ -30,17 +29,6 @@ bool ObjectAvoidance::objectInPath(double steeringAngle)
         }
         if(consecutivePointsInPath > minObjectSize_) return true;
     }
-    */
-    for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
-        // point has to be in path and in range
-        if(pointInPath(it->position.x, it->position.y, steeringAngle) && it->position.z < 1.5) {
-            consecutivePointsInPath++;
-        } else {
-            consecutivePointsInPath = 0;
-        }
-        if(consecutivePointsInPath > minObjectSize_) return true;
-    }
-    return false;
 }
 
 bool ObjectAvoidance::pointInPath(double x, double y, double angle)
@@ -76,18 +64,6 @@ double ObjectAvoidance::getNewSteeringAngle(double steeringAngle)
 
 void ObjectAvoidance::scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 {
-    laserDataTf_.clear();
-    int numberLaserPoints = (int) ( (abs(scan->angle_min) + abs(scan->angle_max))/scan->angle_increment);
-    for(int i = 0; i < numberLaserPoints; i++) {
-        //max distance
-        geometry_msgs::Pose newLaserPoint;
-        newLaserPoint.position.x = cos(scan->angle_min + scan->angle_increment*i)*scan->ranges[i];
-        newLaserPoint.position.y = sin(scan->angle_min + scan->angle_increment*i)*scan->ranges[i];
-        newLaserPoint.position.z = scan->ranges[i];
-        laserDataTf_.push_back(newLaserPoint);
-
-    }
-    /*
     laser_geometry::LaserProjection projector_;
     if(!tf_->waitForTransform(
                 scan->header.frame_id,
@@ -97,5 +73,4 @@ void ObjectAvoidance::scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
         return;
     }
     projector_.transformLaserScanToPointCloud("/laser",*scan, laserPoints,*tf_);
-    */
 }
