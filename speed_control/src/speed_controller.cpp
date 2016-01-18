@@ -153,6 +153,35 @@ double SpeedController::calcCurveWeightSimple()
 
     const double maxShort = short_limit, maxLong = long_limit;
 
+
+    // Angle calculation with respect to the car
+//    for (int i = 1; i < current_path.size(); i += 1)
+//    {
+//        accumulatedDistance += calcDistance(current_path[i], current_path[i-1]);
+//        if (accumulatedDistance > threshold)
+//        {
+//            if (threshold == longDist) // Large threshold reached - leave loop
+//            {
+//                longAngle = fabs(calcAngle(current_path[0], current_path[i]))*180/M_PI;
+//                longValid = true;
+//                std::cout << " longAngle: " << longAngle << std::endl;
+//                break;
+//            }
+//            else // Short threshold reached - switch to larger threshold
+//            {
+//                threshold = longDist;
+//                shortAngle = fabs(calcAngle(current_path[0], current_path[i]))*180/M_PI;
+//                shortValid = true;
+//                std::cout << " shortAngle: " << shortAngle << std::endl;
+//            }
+//        }
+//    }
+
+    // Angle calculation with respect to the path
+    double vx = 0.0, vx_base = current_path[1].pose.position.x - current_path[0].pose.position.x;
+    double vy = 0.0, vy_base = current_path[1].pose.position.y - current_path[0].pose.position.y;
+    double dist = 0.0, dist_base = calcDistance(vx_base, vy_base);
+
     for (int i = 1; i < current_path.size(); i += 1)
     {
         accumulatedDistance += calcDistance(current_path[i], current_path[i-1]);
@@ -160,21 +189,32 @@ double SpeedController::calcCurveWeightSimple()
         {
             if (threshold == longDist) // Large threshold reached - leave loop
             {
-                longAngle = fabs(calcAngle(current_path[0], current_path[i]))*180/M_PI;
+                vx = current_path[i].pose.position.x - current_path[0].pose.position.x;
+                vy = current_path[i].pose.position.y - current_path[0].pose.position.y;
+                dist = calcDistance(vx, vy);
+
+                longAngle = fabs(acos(clip((vx * vx_base + vy * vy_base) / (dist * dist_base), 0.0, 1.0))*180/M_PI);
                 longValid = true;
+
                 std::cout << " longAngle: " << longAngle << std::endl;
                 break;
             }
             else // Short threshold reached - switch to larger threshold
             {
+                vx = current_path[i].pose.position.x - current_path[0].pose.position.x;
+                vy = current_path[i].pose.position.y - current_path[0].pose.position.y;
+                dist = calcDistance(vx, vy);
                 threshold = longDist;
-                shortAngle = fabs(calcAngle(current_path[0], current_path[i]))*180/M_PI;
+
+                shortAngle = fabs(acos(clip((vx * vx_base + vy * vy_base) / (dist * dist_base), 0.0, 1.0))*180/M_PI);
                 shortValid = true;
+
                 std::cout << " shortAngle: " << shortAngle << std::endl;
             }
         }
     }
 
+    // Convert angles to curve weights
     if (shortValid)
     {
         weight += 0.5 * clip(shortAngle, 0.01, maxShort)/maxShort;
