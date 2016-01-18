@@ -11,18 +11,21 @@
 #include <sensor_msgs/LaserScan.h>
 #include <iostream>
 #include <fstream>
+#include "objectavoidance.h"
 
 using namespace std;
 
 #ifndef TAS_LOCAL_PLANNER_CPP
 #define TAS_LOCAL_PLANNER_CPP
 
-sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
-sensor_msgs::PointCloud tlpLaserCloud;
-tf::TransformListener* tf_;
-bool useBaseLinkFrame_;
-
 namespace tas_local_planner {
+
+sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
+
+struct Circle{
+    double y;
+    double r;
+};
 
 class LocalPlanner : public nav_core::BaseLocalPlanner
 {
@@ -43,7 +46,7 @@ private:
     double carwidth_;
     double wheelbase_;
     bool doObstacleAvoidance_;
-    int minDistance_;
+    double minDistance_;
     double steeringAngleParameter_;
     double laserMaxDist_;
     int minObjectSize_;
@@ -52,25 +55,26 @@ private:
     bool goalIsReached_;
     bool initialized_;
     bool globalPlanIsSet_;
+    double steerAngleOld_;
     costmap_2d::Costmap2DROS* costmap_ros_;
     ros::NodeHandle nodeHandle_;
     ros::Subscriber subScan_;
+    tf::TransformListener* tf_;
     ros::Publisher pubTest_;
     std::vector<geometry_msgs::PoseStamped> plan_;
     geometry_msgs::PoseStamped robotPose_;
+    Circle steeringCircle;
+
+    //obstacle avoidance
+    ObjectAvoidance *objectAvoidance;
 
     //laser
     std::vector<geometry_msgs::Pose> laserDataTf_;
 
-    //debug
-    std::ofstream debugFile_;
-
+    //debugging
+    int oldPoint;
 
     // functions
-    //void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
-    int makeDecision();
-    void analyzeLaserData(float angle);
-    void tfRobotPose();
     float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b);
     bool checkForObject(float angle, float x, float y); // 0 not in path, 1 in path
     float calcAngle(float x, float y);
