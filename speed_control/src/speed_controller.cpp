@@ -178,10 +178,12 @@ double SpeedController::calcCurveWeightSimple()
 //    }
 
     // Angle calculation with respect to the path
-    double vx = 0.0, vx_base = current_path[1].pose.position.x - current_path[0].pose.position.x;
-    double vy = 0.0, vy_base = current_path[1].pose.position.y - current_path[0].pose.position.y;
-    double dist = 0.0, dist_base = calcDistance(vx_base, vy_base);
-
+    if (current_path.size() > 0)
+    {    
+        double vx = 0.0, vx_base = current_path[1].pose.position.x - current_path[0].pose.position.x;
+        double vy = 0.0, vy_base = current_path[1].pose.position.y - current_path[0].pose.position.y;
+        double dist = 0.0, dist_base = calcDistance(vx_base, vy_base);
+    
     for (int i = 1; i < current_path.size(); i += 1)
     {
         accumulatedDistance += calcDistance(current_path[i], current_path[i-1]);
@@ -210,10 +212,10 @@ double SpeedController::calcCurveWeightSimple()
                 shortValid = true;
 
                 std::cout << " shortAngle: " << shortAngle << std::endl;
-            }
+            } 
         }
     }
-
+    }
     // Convert angles to curve weights
     if (shortValid)
     {
