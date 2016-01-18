@@ -19,7 +19,6 @@ double ObjectAvoidance::doObstacleAvoidance(double steeringAngle)
 
 bool ObjectAvoidance::objectInPath(double steeringAngle)
 {
-    transformLaserScan();
     int consecutivePointsInPath = 0;
     /*
     for(std::vector<geometry_msgs::Point32>::iterator it = laserPoints.points.begin(); it != laserPoints.points.end(); it++){
@@ -75,29 +74,27 @@ double ObjectAvoidance::getNewSteeringAngle(double steeringAngle)
     return steeringAngle;
 }
 
-void ObjectAvoidance::transformLaserScan(){
+void ObjectAvoidance::scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
+{
     laserDataTf_.clear();
-    int numberLaserPoints = (int) ( (abs(laserScan->angle_min) + abs(laserScan->angle_max))/laserScan->angle_increment);
+    int numberLaserPoints = (int) ( (abs(scan->angle_min) + abs(scan->angle_max))/scan->angle_increment);
     for(int i = 0; i < numberLaserPoints; i++) {
         //max distance
         geometry_msgs::Pose newLaserPoint;
-        newLaserPoint.position.x = cos(laserScan->angle_min + laserScan->angle_increment*i)*laserScan->ranges[i];
-        newLaserPoint.position.y = sin(laserScan->angle_min + laserScan->angle_increment*i)*laserScan->ranges[i];
-        newLaserPoint.position.z = laserScan->ranges[i];
+        newLaserPoint.position.x = cos(scan->angle_min + scan->angle_increment*i)*scan->ranges[i];
+        newLaserPoint.position.y = sin(scan->angle_min + scan->angle_increment*i)*scan->ranges[i];
+        newLaserPoint.position.z = scan->ranges[i];
         laserDataTf_.push_back(newLaserPoint);
-    }
-}
 
-void ObjectAvoidance::scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
-{
-    laserScan = scan;
+    }
     /*
     laser_geometry::LaserProjection projector_;
     if(!tf_->waitForTransform(
                 scan->header.frame_id,
                 "/laser",
                 scan->header.stamp + ros::Duration().fromSec(scan->ranges.size()*scan->time_increment),
-                ros::Duration(1.0)))        return;
+                ros::Duration(1.0))){
+        return;
     }
     projector_.transformLaserScanToPointCloud("/laser",*scan, laserPoints,*tf_);
     */

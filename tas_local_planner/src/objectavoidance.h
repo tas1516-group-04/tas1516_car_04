@@ -33,10 +33,8 @@ private:
     bool objectInPath(double steeringAngle);
     bool pointInPath(double x, double y, double angle);
     double getNewSteeringAngle(double steeringAngle);
-    void transformLaserScan();
-    
     std::vector<geometry_msgs::Pose> laserDataTf_;
-    sensor_msgs::LaserScan::ConstPtr laserScan;
+
 
     tf::TransformListener* tf_;
     double wheelbase_;
