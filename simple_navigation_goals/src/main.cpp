@@ -30,7 +30,7 @@ void activeCb() {
  * Callback function, called every time feedback is received for the goal
  */
 void feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback) {
-   // ROS_INFO("[X]:%f [Y]:%f [W]: %f [Z]: %f", feedback->base_position.pose.position.x,feedback->base_position.pose.position.y,feedback->base_position.pose.orientation.w, feedback->base_position.pose.orientation.z);
+    ROS_INFO("[X]:%f [Y]:%f [W]: %f [Z]: %f", feedback->base_position.pose.position.x,feedback->base_position.pose.position.y,feedback->base_position.pose.orientation.w, feedback->base_position.pose.orientation.z);
 }
 
 /**
@@ -41,44 +41,17 @@ int main(int argc, char** argv){
     std::vector<geometry_msgs::Pose> waypoints; // vector of goals, with position and orientation
 
     geometry_msgs::Pose waypoint1;
-    waypoint1.position.x = 10.4;
-    waypoint1.position.y = 9.509;
+    waypoint1.position.x = 22.0;
+    waypoint1.position.y = 10.75;
     waypoint1.position.z = 0.000;
     waypoint1.orientation.x = 0.000;
     waypoint1.orientation.y = 0.000;
-    waypoint1.orientation.z = -0.725;
-    waypoint1.orientation.w = 0.689;
+    waypoint1.orientation.z = 0;
+    waypoint1.orientation.w = 1;
     waypoints.push_back(waypoint1);
 
-    geometry_msgs::Pose waypoint2;
-    waypoint2.position.x = 17.377;
-    waypoint2.position.y = 6.188;
-    waypoint2.position.z = 0.000;
-    waypoint2.orientation.x = 0.000;
-    waypoint2.orientation.y = 0.000;
-    waypoint2.orientation.z = -0.033;
-    waypoint2.orientation.w = 0.999;
-    waypoints.push_back(waypoint2);
 
-    geometry_msgs::Pose waypoint3;
-    waypoint3.position.x = 23.495;
-    waypoint3.position.y = 14.678;
-    waypoint3.position.z = 0.000;
-    waypoint3.orientation.x = 0.000;
-    waypoint3.orientation.y = 0.000;
-    waypoint3.orientation.z = 0.685;
-    waypoint3.orientation.w = 0.729;
-    waypoints.push_back(waypoint3);
 
-    geometry_msgs::Pose waypoint4;
-    waypoint4.position.x = 11.663;
-    waypoint4.position.y = 18.607;
-    waypoint4.position.z = 0.000;
-    waypoint4.orientation.x = 0.000;
-    waypoint4.orientation.y = 0.000;
-    waypoint4.orientation.z = -0.725;
-    waypoint4.orientation.w = 0.689;
-    waypoints.push_back(waypoint4);
 
     MoveBaseClient ac("move_base", true); // action client to spin a thread by default
 
