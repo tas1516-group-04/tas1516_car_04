@@ -33,6 +33,7 @@ private:
     bool objectInPath(double steeringAngle);
     bool pointInPath(double x, double y, double angle);
     double getNewSteeringAngle(double steeringAngle);
+    std::vector<geometry_msgs::Pose> laserDataTf_;
 
 
     tf::TransformListener* tf_;

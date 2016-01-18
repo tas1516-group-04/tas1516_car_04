@@ -20,9 +20,20 @@ double ObjectAvoidance::doObstacleAvoidance(double steeringAngle)
 bool ObjectAvoidance::objectInPath(double steeringAngle)
 {
     int consecutivePointsInPath = 0;
+    /*
     for(std::vector<geometry_msgs::Point32>::iterator it = laserPoints.points.begin(); it != laserPoints.points.end(); it++){
         // point has to be in path and in range
         if(pointInPath(it->x, it->y, steeringAngle) && pow(it->x,2) + pow(it->y,2) < 1.5) {
+            consecutivePointsInPath++;
+        } else {
+            consecutivePointsInPath = 0;
+        }
+        if(consecutivePointsInPath > minObjectSize_) return true;
+    }
+    */
+    for(std::vector<geometry_msgs::Pose>::iterator it = laserDataTf_.begin(); it != laserDataTf_.end(); it++){
+        // point has to be in path and in range
+        if(pointInPath(it->position.x, it->position.y, steeringAngle) && it->position.z < 1.5) {
             consecutivePointsInPath++;
         } else {
             consecutivePointsInPath = 0;
@@ -34,11 +45,8 @@ bool ObjectAvoidance::objectInPath(double steeringAngle)
 
 bool ObjectAvoidance::pointInPath(double x, double y, double angle)
 {
-    double maxRange = 1.5;
-    double range = sqrt(pow(x,2) + pow(y,2));
     if(pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius-carwidth_/2,2) >= 0
-            && pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius+carwidth_/2,2) <= 0
-            && range < maxRange) {
+            && pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius+carwidth_/2,2) <= 0) {
         // return true if point in path
         return true;
     } else {
@@ -49,9 +57,9 @@ bool ObjectAvoidance::pointInPath(double x, double y, double angle)
 
 double ObjectAvoidance::getNewSteeringAngle(double steeringAngle)
 {
-    for(int i = 1; i < 100; i++) {
-        float angleInc = steeringAngle + i * 0.01;
-        float angleDec = steeringAngle - i * 0.01;
+    for(int i = 1; i < 10; i++) {
+        float angleInc = steeringAngle + i * 0.05;
+        float angleDec = steeringAngle - i * 0.05;
 
         // decide what to do
         if(!objectInPath(angleInc)) {
@@ -68,6 +76,18 @@ double ObjectAvoidance::getNewSteeringAngle(double steeringAngle)
 
 void ObjectAvoidance::scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 {
+    laserDataTf_.clear();
+    int numberLaserPoints = (int) ( (abs(scan->angle_min) + abs(scan->angle_max))/scan->angle_increment);
+    for(int i = 0; i < numberLaserPoints; i++) {
+        //max distance
+        geometry_msgs::Pose newLaserPoint;
+        newLaserPoint.position.x = cos(scan->angle_min + scan->angle_increment*i)*scan->ranges[i];
+        newLaserPoint.position.y = sin(scan->angle_min + scan->angle_increment*i)*scan->ranges[i];
+        newLaserPoint.position.z = scan->ranges[i];
+        laserDataTf_.push_back(newLaserPoint);
+
+    }
+    /*
     laser_geometry::LaserProjection projector_;
     if(!tf_->waitForTransform(
                 scan->header.frame_id,
@@ -77,4 +97,5 @@ void ObjectAvoidance::scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
         return;
     }
     projector_.transformLaserScanToPointCloud("/laser",*scan, laserPoints,*tf_);
+    */
 }
