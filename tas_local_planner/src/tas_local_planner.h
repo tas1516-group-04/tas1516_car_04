@@ -43,6 +43,7 @@ private:
     double steeringAngleParameter_;
     double laserMaxDist_;
     int minObjectSize_;
+    double offset_;
 
     //variables
     bool goalIsReached_;
@@ -67,8 +68,7 @@ private:
 
     // functions
     float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b);
-    bool checkForObject(float angle, float x, float y); // 0 not in path, 1 in path
-    float calcAngle(float x, float y);
+    double calcAngle(geometry_msgs::PoseStamped point);
 
 };
 };
