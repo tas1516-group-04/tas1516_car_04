@@ -27,7 +27,7 @@ bool ObjectAvoidance::objectInPath(double steeringAngle)
         } else {
             consecutivePointsInPath = 0;
         }
-        if(consecutivePointsInPath > 8) return true;
+        if(consecutivePointsInPath > minObjectSize_) return true;
     }
     return false;
 }

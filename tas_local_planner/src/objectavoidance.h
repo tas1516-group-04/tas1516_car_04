@@ -26,6 +26,7 @@ public:
     double radius;
     double yM;
 
+    int minObjectSize_;
     sensor_msgs::PointCloud laserPoints;
 
 private:

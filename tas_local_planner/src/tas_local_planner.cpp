@@ -35,7 +35,7 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         nodeHandle_.param<double>("/move_base_node/min_distance", minDistance_, 0.3);
         nodeHandle_.param<double>("/move_base_node/steering_angle_parameter", steeringAngleParameter_, 0.6);
         nodeHandle_.param<double>("/move_base_node/laser_max_dist", laserMaxDist_, 2);
-        nodeHandle_.param<int>("/move_base_node/min_object_size", minObjectSize_, 1);
+        nodeHandle_.param<int>("/move_base_node/min_object_size", objectAvoidance->minObjectSize_, 1);
 
         //output parameter
         if(doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance active!");
@@ -61,7 +61,10 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
         /// get target point
         int point = 1; // which point first? distance?
-        while(calcDistance(plan_[0], plan_[point]) < minDistance_) {
+        geometry_msgs::PoseStamped origin;
+        origin.pose.position.x = 0;
+        origin.pose.position.y = 0;
+        while(calcDistance(origin, plan_[point]) < minDistance_) {
             point++;
             if(point == plan_.size() - 1) break;
         }
