@@ -20,13 +20,6 @@ using namespace std;
 
 namespace tas_local_planner {
 
-sensor_msgs::LaserScan::ConstPtr tlpLaserScan;
-
-struct Circle{
-    double y;
-    double r;
-};
-
 class LocalPlanner : public nav_core::BaseLocalPlanner
 {
 public:
@@ -60,10 +53,8 @@ private:
     ros::NodeHandle nodeHandle_;
     ros::Subscriber subScan_;
     tf::TransformListener* tf_;
-    ros::Publisher pubTest_;
     std::vector<geometry_msgs::PoseStamped> plan_;
     geometry_msgs::PoseStamped robotPose_;
-    Circle steeringCircle;
 
     //obstacle avoidance
     ObjectAvoidance *objectAvoidance;

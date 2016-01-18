@@ -18,12 +18,7 @@ LocalPlanner::LocalPlanner(std::string name, tf::TransformListener* tf, costmap_
 }
 
 void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros){
-    if(!initialized_) {
-        //classes
-        objectAvoidance = new ObjectAvoidance(wheelbase_, carwidth_, tf);
-
-        subScan_ = nodeHandle_.subscribe("scan", 1000, &ObjectAvoidance::scanCallback, objectAvoidance);
-        pubTest_ = nodeHandle_.advertise<sensor_msgs::PointCloud>("test",1000);
+    if(!initialized_) {        
         tf_ = tf;
         costmap_ros_ = costmap_ros;
         goalIsReached_ = false;
@@ -36,6 +31,11 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         nodeHandle_.param<double>("/move_base_node/steering_angle_parameter", steeringAngleParameter_, 0.6);
         nodeHandle_.param<double>("/move_base_node/laser_max_dist", laserMaxDist_, 2);
         nodeHandle_.param<int>("/move_base_node/min_object_size", objectAvoidance->minObjectSize_, 1);
+
+        //classes
+        objectAvoidance = new ObjectAvoidance(wheelbase_, carwidth_, tf);
+
+        subScan_ = nodeHandle_.subscribe("scan", 1000, &ObjectAvoidance::scanCallback, objectAvoidance);
 
         //output parameter
         if(doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance active!");
@@ -87,8 +87,6 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         }
         oldPoint = point;
 
-        /// obstacle avoidance
-        pubTest_.publish(objectAvoidance->laserPoints);
         if(doObstacleAvoidance_) {
             //            cmd_vel.angular.z = objectAvoidance->doObstacleAvoidance(steeringAngle, tlpLaserCloud)*
             //                    steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
