@@ -280,7 +280,7 @@ int main(int argc, char** argv)
             }
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
+            vel_msg.angular.z = angularControlP(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
             cmd_vel_pub.publish(vel_msg);
 
             // check if in a certain range next to parking wall
@@ -305,11 +305,11 @@ int main(int argc, char** argv)
             vel_msg.linear.x = LINEAR_SPEED;
 
             // check if distance to first corner large enough for active angular controller
-            if (Front.half_left_dist >= ((MIN_GAP_DEPTH + MAX_GAP_DEPTH)/2.0) )
+            //if (Front.half_left_dist >= ((MIN_GAP_DEPTH + MAX_GAP_DEPTH)/2.0) )
                 vel_msg.angular.z = angularControlP(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
-            else
+            //else
                 // set steering angle to 0 if first corner is close
-                vel_msg.angular.z = 0;
+                //vel_msg.angular.z = 0;
             cmd_vel_pub.publish(vel_msg);
 
             // check if in range to detect first corner start
@@ -330,7 +330,7 @@ int main(int argc, char** argv)
         case FIRST_CORNER_END:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            // vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
+            vel_msg.angular.z = 0;
             cmd_vel_pub.publish(vel_msg);
 
             // check if in range to detect first corner end
@@ -355,7 +355,7 @@ int main(int argc, char** argv)
         case SECOND_CORNER_START:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
+            vel_msg.angular.z = angularControlP(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
             cmd_vel_pub.publish(vel_msg);
 
             if (Front.left_dist >= MIN_GAP_DEPTH && Front.left_dist <= MAX_GAP_DEPTH) {
