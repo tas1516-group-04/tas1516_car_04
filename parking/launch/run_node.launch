@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<launch>
+  <master auto="start"/>
+  <param name="/use_sim_time" value="false"/>
+
+  <node pkg = "parking" type="parking_node" name="parking_node" output="screen"/>
+
+  <rosparam ns="parking" command="load" file="$(find parking)/launch/params.yaml" />
+
+</launch>

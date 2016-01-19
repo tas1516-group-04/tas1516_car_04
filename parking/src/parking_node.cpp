@@ -11,7 +11,7 @@
 // for file printing
 #include <iostream>
 #include <fstream>
-
+#include <ros/package.h>
 #include <time.h>
 #include <string>
 
@@ -376,7 +376,7 @@ int main(int argc, char** argv)
         case SECOND_CORNER_END:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = STEERING_FIRST;
+            vel_msg.angular.z = - 0.5 * STEERING_FIRST;
             cmd_vel_pub.publish(vel_msg);
 
             if (Back.left_dist <= MAX_GAP_DEPTH) {
@@ -486,8 +486,10 @@ int main(int argc, char** argv)
             if (input == 'y') {
                 ofstream myfile;
 
-                string fname = get_date() + "_yaw.txt"; // create filename using current time and date
+                string fname = "/home/tas_group_04/" + get_date() + "_yaw.txt"; // create filename using current time and date
+		
                 myfile.open(fname.c_str());
+		cout << "Writing yaw to file: " << fname << endl;
                 for (int i=0; i<yaw_vec.size(); i++) {
                     cout << yaw_vec[i] << endl;
                     myfile << yaw_vec[i] << endl;
