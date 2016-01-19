@@ -31,7 +31,7 @@ int main(int argc, char** argv)
                 {
                     // std::cout << "vel_cmd: " << autonomous_control.vel_linearVelocity << std::endl;
                     // std::cout << "cmd_vel: " << autonomous_control.cmd_linearVelocity << std::endl;
-                    if (autonomous_control.cmd_linearVelocity == 101.0)
+                    if (autonomous_control.cmd_linearVelocity == 0.5)
                     {
                         // SpeedController will send -1 when no speed can be calculated.
                         if (autonomous_control.vel_linearVelocity != -1)

@@ -2,7 +2,7 @@
   car_width: 0.4
   wheelbase: 0.355
   obstacle_avoidance: false
-  min_distance: 0.8
-  steering_angle_parameter: 0.8
-  min_object_size: 0
-  offset: -0.00
+  min_distance: 0.6
+  steering_angle_parameter: 1
+  min_object_size: 20
+  offset: -0.04

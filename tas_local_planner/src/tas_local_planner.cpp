@@ -94,7 +94,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         oldPoint = point;
 
         cmd_vel.angular.z = steeringAngle*steeringAngleParameter_ + offset_;
-        cmd_vel.linear.x = 0.2;
+        cmd_vel.linear.x = 0.5;
     }
     return true;
 }
