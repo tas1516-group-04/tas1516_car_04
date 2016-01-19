@@ -1,9 +1,10 @@
-close all;
+%close all;
 
 yaw = importdata('yaw.txt');
 
 r_yaw = -1.50221;
 
+figure;
 plot(yaw);
 hold on;
 plot(110, -1.68, 'x', 'LineWidth',2);
