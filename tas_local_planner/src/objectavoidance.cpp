@@ -6,39 +6,35 @@ ObjectAvoidance::ObjectAvoidance(double wheelbase, double carwidth, tf::Transfor
     tf_(tf)
 {
 }
-
-double ObjectAvoidance::doObstacleAvoidance(double steeringAngle)
+geometry_msgs::PoseStamped ObjectAvoidance::doObstacleAvoidance(int targetPoint, std::vector<geometry_msgs::PoseStamped>& plan)
 {
-    if(objectInPath(steeringAngle)) {
-        ROS_INFO("TLP: Object in path!");
-        return getNewSteeringAngle(steeringAngle);
-    } else {
-        return steeringAngle;
+    for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan.begin(); it != plan.begin()+targetPoint; it++) {
+        if(objectInPath(*it)) {
+            ROS_INFO("TLP: Object in Path!");
+            return getNewTargetPoint(*it);
+        }
     }
+    return plan[targetPoint];
 }
 
-bool ObjectAvoidance::objectInPath(double steeringAngle)
+bool ObjectAvoidance::objectInPath(geometry_msgs::PoseStamped& targetPoint)
 {
     int consecutivePointsInPath = 0;
     for(std::vector<geometry_msgs::Point32>::iterator it = laserPoints.points.begin(); it != laserPoints.points.end(); it++){
         // point has to be in path and in range
-        if(pointInPath(it->x, it->y, steeringAngle) && pow(it->x,2) + pow(it->y,2) < 1.5) {
+        if(pointInPath(it->x, it->y, targetPoint)) {
             consecutivePointsInPath++;
         } else {
+            if(consecutivePointsInPath > minObjectSize_) return true;
             consecutivePointsInPath = 0;
         }
-        if(consecutivePointsInPath > 8) return true;
     }
     return false;
 }
 
-bool ObjectAvoidance::pointInPath(double x, double y, double angle)
+bool ObjectAvoidance::pointInPath(double x, double y, geometry_msgs::PoseStamped& targetPoint)
 {
-    double maxRange = 1.5;
-    double range = sqrt(pow(x,2) + pow(y,2));
-    if(pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius-carwidth_/2,2) >= 0
-            && pow(x+wheelbase_,2) + pow(y-yM,2) - pow(radius+carwidth_/2,2) <= 0
-            && range < maxRange) {
+    if(pow(x-targetPoint.pose.position.x,2) + pow(y-targetPoint.pose.position.y,2) <= pow(carwidth_/2+0.05,2)){
         // return true if point in path
         return true;
     } else {
@@ -47,23 +43,27 @@ bool ObjectAvoidance::pointInPath(double x, double y, double angle)
     }
 }
 
-double ObjectAvoidance::getNewSteeringAngle(double steeringAngle)
+geometry_msgs::PoseStamped ObjectAvoidance::getNewTargetPoint(geometry_msgs::PoseStamped& targetPoint)
 {
-    for(int i = 1; i < 100; i++) {
-        float angleInc = steeringAngle + i * 0.01;
-        float angleDec = steeringAngle - i * 0.01;
+    geometry_msgs::PoseStamped yInc;
+    yInc.pose.position.x = targetPoint.pose.position.x;
+    geometry_msgs::PoseStamped yDec;
+    yDec.pose.position.x = targetPoint.pose.position.x;
+    for(int i = 1; i < 20; i++) {
+        yInc.pose.position.y = targetPoint.pose.position.y + i * 0.05;
+        yDec.pose.position.y = targetPoint.pose.position.y - i * 0.05;
 
         // decide what to do
-        if(!objectInPath(angleInc)) {
-            ROS_INFO("TLP: Alternative: Left turn! Z: %f", (float) angleInc);
-            return angleInc; // which steering parameter?
+        if(!objectInPath(yInc)) {
+            ROS_INFO("TLP: Alternative: Left turn! ");
+            return yInc; // which steering parameter?
         }
-        if(!objectInPath(angleDec)) {
-            ROS_INFO("TLP: Alternative: Right turn! Z: %f",(float) angleDec);
-            return angleDec;
+        if(!objectInPath(yDec)) {
+            ROS_INFO("TLP: Alternative: Right turn!");
+            return yDec;
         }
     }
-    return steeringAngle;
+    return targetPoint;
 }
 
 void ObjectAvoidance::scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)

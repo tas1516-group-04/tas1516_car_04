@@ -19,20 +19,20 @@ class ObjectAvoidance
 {
 public:
     ObjectAvoidance(double wheelbase, double carwidth, tf::TransformListener* tf_);
-    double doObstacleAvoidance(double steeringAngle);
+    geometry_msgs::PoseStamped doObstacleAvoidance(int targetPoint, std::vector<geometry_msgs::PoseStamped> &plan);
 
     void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
 
     double radius;
     double yM;
 
+    int minObjectSize_;
     sensor_msgs::PointCloud laserPoints;
 
 private:
-    bool objectInPath(double steeringAngle);
-    bool pointInPath(double x, double y, double angle);
-    double getNewSteeringAngle(double steeringAngle);
-
+    bool objectInPath(geometry_msgs::PoseStamped& targetPoint);
+    bool pointInPath(double x, double y, geometry_msgs::PoseStamped &targetPoint);
+    geometry_msgs::PoseStamped getNewTargetPoint(geometry_msgs::PoseStamped &targetPoint);
 
     tf::TransformListener* tf_;
     double wheelbase_;

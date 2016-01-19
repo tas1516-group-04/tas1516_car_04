@@ -1,4 +1,4 @@
-#include <pluginlib/class_list_macros.h>
+﻿#include <pluginlib/class_list_macros.h>
 #include "tas_local_planner.h"
 #include <tf/transform_datatypes.h>
 
@@ -18,12 +18,7 @@ LocalPlanner::LocalPlanner(std::string name, tf::TransformListener* tf, costmap_
 }
 
 void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros){
-    if(!initialized_) {
-        //classes
-        objectAvoidance = new ObjectAvoidance(wheelbase_, carwidth_, tf);
-
-        subScan_ = nodeHandle_.subscribe("scan", 1000, &ObjectAvoidance::scanCallback, objectAvoidance);
-        pubTest_ = nodeHandle_.advertise<sensor_msgs::PointCloud>("test",1000);
+    if(!initialized_) {        
         tf_ = tf;
         costmap_ros_ = costmap_ros;
         goalIsReached_ = false;
@@ -35,7 +30,13 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         nodeHandle_.param<double>("/move_base_node/min_distance", minDistance_, 0.3);
         nodeHandle_.param<double>("/move_base_node/steering_angle_parameter", steeringAngleParameter_, 0.6);
         nodeHandle_.param<double>("/move_base_node/laser_max_dist", laserMaxDist_, 2);
-        nodeHandle_.param<int>("/move_base_node/min_object_size", minObjectSize_, 1);
+        nodeHandle_.param<double>("/move_base_node/offset", offset_, 2);
+
+        //classes
+        objectAvoidance = new ObjectAvoidance(wheelbase_, carwidth_, tf);
+        nodeHandle_.param<int>("/move_base_node/min_object_size", objectAvoidance->minObjectSize_, 1);
+
+        subScan_ = nodeHandle_.subscribe("scan", 1000, &ObjectAvoidance::scanCallback, objectAvoidance);
 
         //output parameter
         if(doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance active!");
@@ -61,8 +62,11 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
 
         /// get target point
         int point = 1; // which point first? distance?
-        while(calcDistance(plan_[0], plan_[point]) < minDistance_) {
-            point++;
+        geometry_msgs::PoseStamped origin;
+        origin.pose.position.x = 0;
+        origin.pose.position.y = 0;
+        while(calcDistance(origin, plan_[point]) < minDistance_ || plan_[point].pose.position.x < 0) {
+           point++;
             if(point == plan_.size() - 1) break;
         }
 
@@ -73,7 +77,12 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         }
 
         // calc simple steering angle
-        double steeringAngle = calcAngle(plan_[point].pose.position.x,plan_[point].pose.position.y);
+        double steeringAngle;
+        if(doObstacleAvoidance_) {
+            steeringAngle = calcAngle(objectAvoidance->doObstacleAvoidance(point, plan_));
+        } else {
+            steeringAngle = calcAngle(plan_[point]);
+        }
 
         if(oldPoint != point) {
             ROS_INFO("TLP: T.P. %i | x: %f | y: %f | a: %f",
@@ -84,25 +93,15 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         }
         oldPoint = point;
 
-        /// obstacle avoidance
-        pubTest_.publish(objectAvoidance->laserPoints);
-        if(doObstacleAvoidance_) {
-            //            cmd_vel.angular.z = objectAvoidance->doObstacleAvoidance(steeringAngle, tlpLaserCloud)*
-            //                    steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
-            cmd_vel.angular.z = objectAvoidance->doObstacleAvoidance(steeringAngle)*steeringAngleParameter_;
-        } else {
-            // steering parameters decreases over distance
-            //            cmd_vel.angular.z = steeringAngle *
-            //                    steeringAngleParameter_*(minDistance_/calcDistance(plan_[0], plan_[point]));
-            cmd_vel.angular.z = steeringAngle*steeringAngleParameter_;
-        }
+        cmd_vel.angular.z = steeringAngle*steeringAngleParameter_ + offset_;
         cmd_vel.linear.x = 0.2;
     }
     return true;
 }
+
 bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
     globalPlanIsSet_ = true;
-    if(plan_.size() < 50) {
+    if(plan.size() < 50) {
         goalIsReached_ = true;
     } else {
         goalIsReached_ = false;
@@ -120,13 +119,13 @@ float LocalPlanner::calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::P
     return sqrt(pow(xDiff,2) + pow(yDiff,2));
 }
 
-float LocalPlanner::calcAngle(float x, float y) {
+double LocalPlanner::calcAngle(geometry_msgs::PoseStamped point) {
     // radius from wheelbase and steerAngle
-    if(y == 0) return 0;
+    if(point.pose.position.y == 0) return 0;
 
     // calc circle center
     double xM = (-1)*wheelbase_;
-    double yM = (pow(x+wheelbase_,2)+pow(y,2) - pow(wheelbase_,2))/(2*y);
+    double yM = (pow(point.pose.position.x+wheelbase_,2)+pow(point.pose.position.y,2) - pow(wheelbase_,2))/(2*point.pose.position.y);
 
     // calc radius
     double radius = sqrt(pow(xM,2) + pow(yM,2));
