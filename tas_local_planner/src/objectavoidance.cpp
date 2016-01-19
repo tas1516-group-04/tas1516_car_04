@@ -34,7 +34,7 @@ bool ObjectAvoidance::objectInPath(geometry_msgs::PoseStamped targetPoint)
 
 bool ObjectAvoidance::pointInPath(double x, double y, geometry_msgs::PoseStamped targetPoint)
 {
-    if(pow(x-targetPoint.pose.position.x,2) + pow(y-targetPoint.pose.position.y,2) <= pow(carwidth_+0.1,2)){
+    if(pow(x-targetPoint.pose.position.x,2) + pow(y-targetPoint.pose.position.y,2) <= pow(carwidth_/2+0.05,2)){
         // return true if point in path
         return true;
     } else {
