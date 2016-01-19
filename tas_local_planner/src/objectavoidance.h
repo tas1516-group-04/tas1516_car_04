@@ -37,7 +37,6 @@ private:
     tf::TransformListener* tf_;
     double wheelbase_;
     double carwidth_;
-
 };
 
 #endif // OBJECTAVOIDANCE_H

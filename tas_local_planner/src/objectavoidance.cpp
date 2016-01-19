@@ -8,14 +8,15 @@ ObjectAvoidance::ObjectAvoidance(double wheelbase, double carwidth, tf::Transfor
 }
 geometry_msgs::PoseStamped ObjectAvoidance::doObstacleAvoidance(int targetPoint, std::vector<geometry_msgs::PoseStamped>& plan)
 {
-    for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan.begin(); it != plan.begin()+targetPoint; it++) {
+    std::vector<geometry_msgs::PoseStamped> plan_ = plan;
+    for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin(); it != plan_.begin()+targetPoint; it++) {
         if(objectInPath(*it)) {
             ROS_INFO("TLP: Object in Path!");
             return getNewTargetPoint(*it);
         }
-        if(it == plan.end()) break;
+        if(it == plan_.end()) break;
     }
-    return plan[targetPoint];
+    return plan_[targetPoint];
 }
 
 bool ObjectAvoidance::objectInPath(geometry_msgs::PoseStamped& targetPoint)

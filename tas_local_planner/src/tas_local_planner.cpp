@@ -67,13 +67,13 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         origin.pose.position.y = 0;
         while(calcDistance(origin, plan_[point]) < minDistance_ || plan_[point].pose.position.x < 0) {
            point++;
-            if(point == plan_.size() + 1) break;
+            if(point == plan_.size()) break;
         }
 
         // should angle decrease over distance?
         while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.3){
             point++;
-            if(point == plan_.size() + 1) break;
+            if(point == plan_.size()) break;
         }
 
         // calc simple steering angle
@@ -93,8 +93,9 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         }
         oldPoint = point;
 
-        cmd_vel.angular.z = steeringAngle*steeringAngleParameter_ + offset_;
         cmd_vel.linear.x = 0.5;
+        cmd_vel.angular.z = steeringAngle*steeringAngleParameter_ + offset_;
+        //cmd_vel.angular.z = steeringAngle*atan(steeringAngle/cmd_vel.linear.x*wheelbase_) + offset_;
     }
     return true;
 }
