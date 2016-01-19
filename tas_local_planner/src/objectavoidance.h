@@ -32,7 +32,7 @@ public:
 private:
     bool objectInPath(geometry_msgs::PoseStamped& targetPoint);
     bool pointInPath(double x, double y, geometry_msgs::PoseStamped &targetPoint);
-    geometry_msgs::PoseStamped getNewTargetPoint(geometry_msgs::PoseStamped targetPoint);
+    geometry_msgs::PoseStamped getNewTargetPoint(geometry_msgs::PoseStamped &targetPoint);
 
     tf::TransformListener* tf_;
     double wheelbase_;

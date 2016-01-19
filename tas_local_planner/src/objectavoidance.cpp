@@ -14,7 +14,6 @@ geometry_msgs::PoseStamped ObjectAvoidance::doObstacleAvoidance(int targetPoint,
             return getNewTargetPoint(*it);
         }
     }
-    ROS_INFO("TLP: No Object in path!");
     return plan[targetPoint];
 }
 
@@ -44,7 +43,7 @@ bool ObjectAvoidance::pointInPath(double x, double y, geometry_msgs::PoseStamped
     }
 }
 
-geometry_msgs::PoseStamped ObjectAvoidance::getNewTargetPoint(geometry_msgs::PoseStamped targetPoint)
+geometry_msgs::PoseStamped ObjectAvoidance::getNewTargetPoint(geometry_msgs::PoseStamped& targetPoint)
 {
     geometry_msgs::PoseStamped yInc;
     yInc.pose.position.x = targetPoint.pose.position.x;
