@@ -13,6 +13,7 @@ geometry_msgs::PoseStamped ObjectAvoidance::doObstacleAvoidance(int targetPoint,
             ROS_INFO("TLP: Object in Path!");
             return getNewTargetPoint(*it);
         }
+        if(it == plan.end()) break;
     }
     return plan[targetPoint];
 }

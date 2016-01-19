@@ -25,9 +25,10 @@ control::control()
 void control::odomCallback(const geometry_msgs::Twist::ConstPtr& msg)
 {
     odom_linearVelocity = msg->linear.x;
-    odom_angularVelocity = msg->angular.z;
+    //odom_angularVelocity = msg->angular.z;
+    odom_angularVelocity = 180/PI*msg->angular.z;
 
-    odom_steeringAngle = 180/PI*atan(odom_angularVelocity/odom_linearVelocity*CAR_LENGTH);
+    //odom_steeringAngle = 180/PI*atan(odom_angularVelocity/odom_linearVelocity*CAR_LENGTH);
 
     odom_steeringAngle = 1500 + 500/30*odom_steeringAngle;
 

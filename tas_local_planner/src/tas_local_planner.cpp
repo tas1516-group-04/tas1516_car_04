@@ -61,19 +61,19 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         }
 
         /// get target point
-        int point = 1; // which point first? distance?
+        int point = 0; // which point first? distance?
         geometry_msgs::PoseStamped origin;
         origin.pose.position.x = 0;
         origin.pose.position.y = 0;
         while(calcDistance(origin, plan_[point]) < minDistance_ || plan_[point].pose.position.x < 0) {
            point++;
-            if(point == plan_.size() - 1) break;
+            if(point == plan_.size() + 1) break;
         }
 
         // should angle decrease over distance?
         while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.3){
             point++;
-            if(point == plan_.size() - 1) break;
+            if(point == plan_.size() + 1) break;
         }
 
         // calc simple steering angle
