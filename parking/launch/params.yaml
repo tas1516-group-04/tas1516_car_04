@@ -31,8 +31,8 @@ LINEAR_SPEED: 0.45
 ANGULAR_SPEED: 0.25
 
 # backward speeds (positive values)
-BACKWARD_SPEED_1: 1.1
-BACKWARD_SPEED_2: 0.8
+BACKWARD_SPEED_1: 0.4 #1.1 original value, change is for KITT
+BACKWARD_SPEED_2: 0.2 #0.8 original value, change is for KITT
 
 # threshold for IMU supported parking
 YAW_THRESHOLD: 0.45
