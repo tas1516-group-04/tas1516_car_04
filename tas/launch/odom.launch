@@ -31,7 +31,7 @@
 	<param name="pub_map_odom_transform" value="false"/>
 	<param name="pub_map_scanmatch_transform" value="true"/>
 
- 	<remap from="map" to="hector_map" />
+	<remap from="map" to="hector_map" />
 	<remap from="initialpose" to="hector_initial"/>
   </node>
 
