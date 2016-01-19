@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-
-<launch>
-  <master auto="start"/>
-  <param name="/use_sim_time" value="false"/>
-
-  <!-- save map to file -->
-  <node pkg="map_server" type="rosservice" name="map_saver" args="/f test"/>
-</launch>
