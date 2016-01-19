@@ -30,6 +30,7 @@ public:
     double cmd_linearVelocity;
     double cmd_angularVelocity;
     double cmd_steeringAngle;
+    double cmd_activateSpeedController;
 
     double vel_linearVelocity;
 

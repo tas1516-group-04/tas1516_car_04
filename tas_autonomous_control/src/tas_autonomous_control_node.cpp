@@ -1,7 +1,13 @@
-#define MAX_VEL 1600
-#define MIN_VEL 1525
+#define MAX_VEL 1580
+#define MIN_VEL 1560
 
 #include "control/control.h"
+
+// Bound a double withing the specified lower and upper bound
+double clip(double n, double lower, double upper)
+{
+    return std::max(lower, std::min(n, upper));
+}
 
 int main(int argc, char** argv)
 {
@@ -31,13 +37,14 @@ int main(int argc, char** argv)
                 {
                     // std::cout << "vel_cmd: " << autonomous_control.vel_linearVelocity << std::endl;
                     // std::cout << "cmd_vel: " << autonomous_control.cmd_linearVelocity << std::endl;
-                    if (autonomous_control.cmd_linearVelocity == 0.5)
+                    if (autonomous_control.cmd_activateSpeedController == 1.0)
                     {
                         // SpeedController will send -1 when no speed can be calculated.
                         if (autonomous_control.vel_linearVelocity != -1)
                         {
                             // vel_linearVelocity will be between 0 and 1
-                            autonomous_control.control_servo.x = 1580 - 20 * autonomous_control.vel_linearVelocity;
+                            autonomous_control.control_servo.x =
+                                    clip(MAX_VEL - (MAX_VEL - MIN_VEL) * autonomous_control.vel_linearVelocity, MIN_VEL, MAX_VEL);
                         }
                         else
                         {
@@ -48,7 +55,7 @@ int main(int argc, char** argv)
                     }
                     else
                     {
-                        autonomous_control.control_servo.x = 1580;
+                        autonomous_control.control_servo.x = MIN_VEL;
                         // std::cout << "Servo_planner: " << autonomous_control.control_servo.x << std::endl;
                     }
 

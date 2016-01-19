@@ -50,6 +50,7 @@ void control::velCallback(const geometry_msgs::Twist::ConstPtr& msg)
 void control::cmdCallback(const geometry_msgs::Twist::ConstPtr& msg)
 {
     cmd_linearVelocity = msg->linear.x;
+    cmd_activateSpeedController = msg->linear.y;
     cmd_angularVelocity = msg->angular.z;
 
     cmd_steeringAngle = 180/PI*atan(cmd_angularVelocity/cmd_linearVelocity*CAR_LENGTH);
