@@ -6,6 +6,7 @@
   
   <!-- Run map server  -->
   <node name="map_server" pkg="map_server" type="map_server" args="$(find tas)/launch/config/map_server/LSR_3.yaml"/>
+  <!-- TODO: change map name here to map.yaml -->
 
    <!-- Run AMCL -->
   <node pkg="amcl" type="amcl" name="amcl" respawn="true">
