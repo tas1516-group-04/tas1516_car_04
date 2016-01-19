@@ -2,8 +2,8 @@
 # no zeros as values allowed!
 
 # Front left laser scan track
-MAX_DIST: 0.62
-MIN_DIST: 0.61
+MAX_DIST: 0.65
+MIN_DIST: 0.64
 
 NUM_MEAN_SAMPLES: 10
 
@@ -19,23 +19,23 @@ MAX_GAP_LENGTH: 1.0
 RANGE_THRESHOLD: 0.05
 
 # Front middle laser scan
-FORWARD_THRESHOLD_1: 0.20
-FORWARD_THRESHOLD_2: 0.25
+FORWARD_THRESHOLD_1: 0.24
+FORWARD_THRESHOLD_2: 0.29
 
 # Back middle laser scan
 BACKWARD_THRESHOLD_1: 0.78
 BACKWARD_THRESHOLD_2: 0.25
 
 # parking speeds (positive values)
-LINEAR_SPEED: 0.45
+LINEAR_SPEED: 0.50 #0.45
 ANGULAR_SPEED: 0.25
 
 # backward speeds (positive values)
-BACKWARD_SPEED_1: 0.08 #1.1 original value, change is for KITT
-BACKWARD_SPEED_2: 0.1 #0.8 original value, change is for KITT
+BACKWARD_SPEED_1: 1.1 #0.08 #1.1 original value, change is for KITT
+BACKWARD_SPEED_2: 0.8  #0.1 #0.8 original value, change is for KITT
 
 # threshold for IMU supported parking
-YAW_THRESHOLD: 0.83
+YAW_THRESHOLD: 0.55
 
 # Steering angle for first parking state (positive values, when driving backwards)
-STEERING_FIRST: 1.46
+STEERING_FIRST: 0.8
