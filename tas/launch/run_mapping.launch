@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<launch>
+  <master auto="start"/>
+  <param name="/use_sim_time" value="false"/>
+
+  <!-- Set up hardware -->
+  <include file="$(find tas)/launch/hardware.launch" />
+
+  <!-- Set up fake odomotry, use adapted odom file without remapping from /map to /hector_map -->
+  <include file="$(find tas)/launch/odom_mapping.launch" />
+
+</launch>
