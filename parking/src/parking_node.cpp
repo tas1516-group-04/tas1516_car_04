@@ -376,7 +376,7 @@ int main(int argc, char** argv)
         case SECOND_CORNER_END:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            // vel_msg.angular.z = angularControl(MIN_DIST, MAX_DIST, ANGULAR_SPEED);
+            vel_msg.angular.z = STEERING_FIRST;
             cmd_vel_pub.publish(vel_msg);
 
             if (Back.left_dist <= MAX_GAP_DEPTH) {
