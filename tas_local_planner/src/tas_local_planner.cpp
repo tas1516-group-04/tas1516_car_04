@@ -81,7 +81,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         }
         */
         //
-        while(calcDistance(origin, plan_[point]) < minDistance_) || plan_[point].pose.position.x < 0) {
+        while(calcDistance(origin, plan_[point]) < minDistance_ || plan_[point].pose.position.x < 0) {
            point++;
             if(point == plan_.size() - 1) break;
         }
