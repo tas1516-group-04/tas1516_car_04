@@ -6,28 +6,35 @@ ObjectAvoidance::ObjectAvoidance(double wheelbase, double carwidth, tf::Transfor
     tf_(tf)
 {
 }
-geometry_msgs::PoseStamped ObjectAvoidance::doObstacleAvoidance(int targetPoint, std::vector<geometry_msgs::PoseStamped>& plan)
+geometry_msgs::PoseStamped ObjectAvoidance::doObstacleAvoidance(int targetPoint, std::vector<geometry_msgs::PoseStamped>& plan, geometry_msgs::Twist& cmd_vel)
 {
     std::vector<geometry_msgs::PoseStamped> plan_ = plan;
     for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan_.begin(); it != plan_.begin()+targetPoint; it++) {
+        distToPoint_ = sqrt(pow(targetPoint.pose.position.x,2)+pow(targetPoint.pose.position.y,2));
         if(objectInPath(*it)) {
             ROS_INFO("TLP: Object in Path!");
+            // break if object in path
+            cmd_vel.linear.x = 0.1;
             return getNewTargetPoint(*it);
         }
+        // safety mechanism
         if(it == plan_.end()) break;
     }
+    // dont break if no object in path
+    cmd_vel.linear.x = 0.5;
     return plan_[targetPoint];
 }
 
 bool ObjectAvoidance::objectInPath(geometry_msgs::PoseStamped& targetPoint)
 {
     int consecutivePointsInPath = 0;
+    double maxConsecutivePointsInPath =  minObjectSize_/(tan(2.8/640)*distToPoint_);
     for(std::vector<geometry_msgs::Point32>::iterator it = laserPoints.points.begin(); it != laserPoints.points.end(); it++){
         // point has to be in path and in range
         if(pointInPath(it->x, it->y, targetPoint)) {
             consecutivePointsInPath++;
         } else {
-            if(consecutivePointsInPath > minObjectSize_) return true;
+            if(consecutivePointsInPath > maxConsecutivePointsInPath) return true;
             consecutivePointsInPath = 0;
         }
     }

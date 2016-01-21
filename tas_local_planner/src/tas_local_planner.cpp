@@ -18,7 +18,7 @@ LocalPlanner::LocalPlanner(std::string name, tf::TransformListener* tf, costmap_
 }
 
 void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros){
-    if(!initialized_) {        
+    if(!initialized_) {
         tf_ = tf;
         costmap_ros_ = costmap_ros;
         goalIsReached_ = false;
@@ -28,13 +28,14 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         nodeHandle_.param<double>("/move_base_node/wheelbase", wheelbase_, 0.3);
         nodeHandle_.param<bool>("/move_base_node/obstacle_avoidance", doObstacleAvoidance_, false);
         nodeHandle_.param<double>("/move_base_node/min_distance", minDistance_, 0.3);
+        nodeHandle_.param<double>("/move_base_node/corridor_width", corridorWidth_, 0.4);
         nodeHandle_.param<double>("/move_base_node/steering_angle_parameter", steeringAngleParameter_, 0.6);
         nodeHandle_.param<double>("/move_base_node/laser_max_dist", laserMaxDist_, 2);
         nodeHandle_.param<double>("/move_base_node/offset", offset_, 2);
 
         //classes
         objectAvoidance = new ObjectAvoidance(wheelbase_, carwidth_, tf);
-        nodeHandle_.param<int>("/move_base_node/min_object_size", objectAvoidance->minObjectSize_, 1);
+        nodeHandle_.param<double>("/move_base_node/min_object_size", objectAvoidance->minObjectSize_, 1);
 
         subScan_ = nodeHandle_.subscribe("scan", 1000, &ObjectAvoidance::scanCallback, objectAvoidance);
 
@@ -65,22 +66,38 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         geometry_msgs::PoseStamped origin;
         origin.pose.position.x = 0;
         origin.pose.position.y = 0;
+
+        /* old
         while(calcDistance(origin, plan_[point]) < minDistance_ || plan_[point].pose.position.x < 0) {
            point++;
-            if(point == plan_.size()) break;
+            if(point == plan_.size() - 1) break;
         }
 
         // should angle decrease over distance?
+
         while(abs(atan2(0-plan_[point].pose.position.x, 0-plan_[point].pose.position.y) + M_PI/2) < 0.3){
             point++;
-            if(point == plan_.size()) break;
+            if(point == plan_.size() - 1) break;
+        }
+        */
+        // maxDistance ca. 0.69 with corridorWidth_ = 0.4, PI/6 = 30° max steering angle
+        while(calcDistance(origin, plan_[point]) < corridorWidth_/(tan(M_PI/6)) || plan_[point].pose.position.x < 0) {
+           point++;
+            if(point == plan_.size() - 1) break;
+        }
+
+        // max angle decreases over distance: angle = atan(carwidth_/distance)
+        while(abs(plan_[point].pose.position.y) < corridorWidth_){
+            point++;
+            if(point == plan_.size() - 1) break;
         }
 
         // calc simple steering angle
         double steeringAngle;
         if(doObstacleAvoidance_) {
-            steeringAngle = calcAngle(objectAvoidance->doObstacleAvoidance(point, plan_));
+            steeringAngle = calcAngle(objectAvoidance->doObstacleAvoidance(point, plan_, cmd_vel));
         } else {
+            cmd_vel.linear.x = 0.5;
             steeringAngle = calcAngle(plan_[point]);
         }
 
@@ -93,7 +110,6 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         }
         oldPoint = point;
 
-        cmd_vel.linear.x = 0.5;
         cmd_vel.angular.z = steeringAngle*steeringAngleParameter_ + offset_;
         //cmd_vel.angular.z = steeringAngle*atan(steeringAngle/cmd_vel.linear.x*wheelbase_) + offset_;
     }
@@ -130,10 +146,6 @@ double LocalPlanner::calcAngle(geometry_msgs::PoseStamped point) {
 
     // calc radius
     double radius = sqrt(pow(xM,2) + pow(yM,2));
-
-    // give object avoidance information
-    objectAvoidance->radius = radius;
-    objectAvoidance->yM = yM;
 
     // calc steering angle
     double angle = M_PI/2 - acos(wheelbase_/radius);

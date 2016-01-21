@@ -42,8 +42,9 @@ private:
     double minDistance_;
     double steeringAngleParameter_;
     double laserMaxDist_;
-    int minObjectSize_;
+    double minObjectSize_;
     double offset_;
+    double corridorWidth_;
 
     //variables
     bool goalIsReached_;
