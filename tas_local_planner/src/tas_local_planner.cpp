@@ -80,8 +80,8 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
             if(point == plan_.size() - 1) break;
         }
         */
-        // maxDistance ca. 0.69 with corridorWidth_ = 0.4, PI/6 = 30° max steering angle
-        while(calcDistance(origin, plan_[point]) < corridorWidth_/(tan(M_PI/6)) || plan_[point].pose.position.x < 0) {
+        //
+        while(calcDistance(origin, plan_[point]) < minDistance_) || plan_[point].pose.position.x < 0) {
            point++;
             if(point == plan_.size() - 1) break;
         }
