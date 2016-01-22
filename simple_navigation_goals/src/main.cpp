@@ -39,7 +39,7 @@ void feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback) {
 int main(int argc, char** argv){
     ros::init(argc, argv, "simple_navigation_goals"); // init and set name
     std::vector<geometry_msgs::Pose> waypoints; // vector of goals, with position and orientation
-
+    /*
     geometry_msgs::Pose waypoint1;
     waypoint1.position.x = 10.4;
     waypoint1.position.y = 9.509;
@@ -79,6 +79,39 @@ int main(int argc, char** argv){
     waypoint4.orientation.z = -0.725;
     waypoint4.orientation.w = 0.689;
     waypoints.push_back(waypoint4);
+    */
+
+    geometry_msgs::Pose waypoint1;
+    waypoint1.position.x = 13.213;
+    waypoint1.position.y = 5.281;
+    waypoint1.position.z = 0.000;
+    waypoint1.orientation.x = 0.000;
+    waypoint1.orientation.y = 0.000;
+    waypoint1.orientation.z = 0.657;
+    waypoint1.orientation.w = 0.754;
+    waypoints.push_back(waypoint1);
+
+    geometry_msgs::Pose waypoint2;
+    waypoint2.position.x = 6.617;
+    waypoint2.position.y = 13.003;
+    waypoint2.position.z = 0.000;
+    waypoint2.orientation.x = 0.000;
+    waypoint2.orientation.y = 0.000;
+    waypoint2.orientation.z = 1;
+    waypoint2.orientation.w = 0.003;
+    waypoints.push_back(waypoint2);
+
+    geometry_msgs::Pose waypoint3;
+    waypoint3.position.x = 0.059;
+    waypoint3.position.y = 0.322;
+    waypoint3.position.z = 0.000;
+    waypoint3.orientation.x = 0;
+    waypoint3.orientation.y = 0;
+    waypoint3.orientation.z = -0.740;
+    waypoint3.orientation.w = 0.673;
+    waypoints.push_back(waypoint3);
+
+
 
     MoveBaseClient ac("move_base", true); // action client to spin a thread by default
 

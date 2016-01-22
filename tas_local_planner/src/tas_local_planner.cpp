@@ -87,9 +87,11 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         }
 
         // max angle decreases over distance: angle = atan(carwidth_/distance)
+        if(!(point == plan_.size() - 1)) {
         while(abs(plan_[point].pose.position.y) < corridorWidth_){
             point++;
             if(point == plan_.size() - 1) break;
+        }
         }
 
         // calc simple steering angle
@@ -97,7 +99,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         if(doObstacleAvoidance_) {
             steeringAngle = calcAngle(objectAvoidance->doObstacleAvoidance(point, plan_, cmd_vel));
         } else {
-            cmd_vel.linear.x = 0.5;
+            cmd_vel.linear.y = 1.0;
             steeringAngle = calcAngle(plan_[point]);
         }
 
@@ -110,6 +112,7 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         }
         oldPoint = point;
 
+        cmd_vel.linear.x = 0.5;
         cmd_vel.angular.z = steeringAngle*steeringAngleParameter_ + offset_;
         //cmd_vel.angular.z = steeringAngle*atan(steeringAngle/cmd_vel.linear.x*wheelbase_) + offset_;
     }

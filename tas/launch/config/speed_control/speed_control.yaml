@@ -3,3 +3,5 @@ angle_min: 10.0
 angle_max: 90.0
 short_limit: 30.0
 long_limit: 40.0
+short_dist: 0.4
+long_dist: 1.5

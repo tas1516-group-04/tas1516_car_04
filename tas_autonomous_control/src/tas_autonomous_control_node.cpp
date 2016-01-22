@@ -1,5 +1,6 @@
 #define MAX_VEL 1580
 #define MIN_VEL 1560
+#define BREAK_VEL 1550
 
 #include "control/control.h"
 
@@ -55,7 +56,7 @@ int main(int argc, char** argv)
                     }
                     else
                     {
-                        autonomous_control.control_servo.x = MIN_VEL;
+                        autonomous_control.control_servo.x = BREAK_VEL;
                         // std::cout << "Servo_planner: " << autonomous_control.control_servo.x << std::endl;
                     }
 
