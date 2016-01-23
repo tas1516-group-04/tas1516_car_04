@@ -33,6 +33,6 @@ The parameters are stored under the namespace *parking/*
 
 ### IMU yaw data acquistion
 
-To get an overview about the IMU yaw during the parking progress, a vector of the yaw over the time is created. To save this, press 'y' at the end of the parking progress, when requested. The data is then saved to a text file in the home folder of the car.
+To get an overview about the IMU yaw during the parking progress, a vector of the yaw over the time is created. To save this vector, press 'y' at the end of the parking progress, when requested. The data is then saved to a text file in the home folder of the car.
 
 
