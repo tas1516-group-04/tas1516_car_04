@@ -1,6 +1,6 @@
 ## Parking
 
-The package "parking" is in charge to fullfill the parallel parking task. 
+The package "parking" is in charge of the parallel parking task. 
 
 The package "parking_control" is an adaption of the provided package "tas_autonomous_control", where a speed controller is implemented to perform the parking at different velocities.
 
