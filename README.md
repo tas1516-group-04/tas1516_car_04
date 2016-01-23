@@ -9,12 +9,16 @@ The parking progress is launched by
 
 `roslaunch parking run.launch`
 
-where the launch file includes the parking parameters, defined in the parameter file "params.yaml" inside the folder "parking/launch".
+where the launch file includes the parking parameters, defined in the parameter file *params.yaml* inside the folder "parking/launch".
 Additionally, the parking node itself need to be started by
 
 `rosrun parking parking_node`
 
 The execution of this node is seperated from the launch file, such that the restarting of the parking progress can be easily achieved by restarting only this node. The Wii-Mote stays paired and the hardware nodes keep running during this time.
+
+### Parameter Tuning
+As mentioned before, all parking parameters are defined in the file *params.yaml*. These parameters are written to the ROS parameter server on startup and can hence be changed online, even during the parking progress.
+The parameters are stored under the namespace *parking/*
 
 ### States
 1. *INIT:* Align car parallel to wall with a P-controller
