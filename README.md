@@ -10,11 +10,11 @@ The parking progress is launched by
 `roslaunch parking run.launch`
 
 where the launch file includes the parking parameters, defined in the parameter file "params.yaml" inside the folder "parking/launch".
-The parking node itself is started by
+Additionally, the parking node itself need to be started by
 
 `rosrun parking parking_node`
 
-The execution of this node is seperated from the launch file, that the restarting of the parking progress can be easily achieved by restarting only this node. The Wii-Mote stays paired during this time.
+The execution of this node is seperated from the launch file, such that the restarting of the parking progress can be easily achieved by restarting only this node. The Wii-Mote stays paired and the hardware nodes keep running during this time.
 
 ### States
 1. *INIT:* Align car parallel to wall with a P-controller
@@ -26,3 +26,9 @@ The execution of this node is seperated from the launch file, that the restartin
 7. *PARKING_STATE_1:* reverse steering angle to maximum and drive further backwards, until rear block comes to close
 8. *PARKING_STATE_2:* drive forward until front block comes to close (correction step)
 9. *END_PARKING:* the car has reached its final parking position
+
+### IMU yaw data acquistion
+
+To get an overview about the IMU yaw during the parking progress, a vector of the yaw over the time is created. To save this, press 'y' at the end of the parking progress, when requested. The data is then saved to a text file in the home folder of the car.
+
+
