@@ -18,25 +18,38 @@
 class ObjectAvoidance
 {
 public:
-    ObjectAvoidance(double wheelbase, double carwidth, tf::TransformListener* tf_);
-    geometry_msgs::PoseStamped doObstacleAvoidance(int targetPoint, std::vector<geometry_msgs::PoseStamped> &plan);
+    ObjectAvoidance(double wheelbase,
+                    double carwidth,
+                    double corridorWidth,
+                    double minDistance);
+    geometry_msgs::PoseStamped doObstacleAvoidance(int targetPoint, std::vector<geometry_msgs::PoseStamped> plan, geometry_msgs::Twist& cmd_vel);
 
     void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
 
-    double radius;
-    double yM;
-
-    int minObjectSize_;
-    sensor_msgs::PointCloud laserPoints;
-
+    double minObjectSize_;
 private:
-    bool objectInPath(geometry_msgs::PoseStamped& targetPoint);
-    bool pointInPath(double x, double y, geometry_msgs::PoseStamped &targetPoint);
-    geometry_msgs::PoseStamped getNewTargetPoint(geometry_msgs::PoseStamped &targetPoint);
 
-    tf::TransformListener* tf_;
+    // parameters
     double wheelbase_;
     double carwidth_;
+    double corridorWidth_;
+    double minDistance_;
+
+    // node handle
+    ros::NodeHandle nodeHandle_;
+    ros::Subscriber subScan_;
+    ros::Publisher pubScanTf_;
+
+    // variables
+    double distToPoint_;
+    sensor_msgs::LaserScan::ConstPtr scan_;
+    std::vector<geometry_msgs::Point32> laserPoints;
+
+    // functions
+    void filterLaserScan();
+    bool objectInPath(geometry_msgs::PoseStamped targetPoint);
+    bool pointInPath(double x, double y, geometry_msgs::PoseStamped targetPoint);
+    geometry_msgs::PoseStamped getNewTargetPoint(geometry_msgs::PoseStamped targetPoint);
 
 };
 
