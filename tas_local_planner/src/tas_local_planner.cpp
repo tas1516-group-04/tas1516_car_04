@@ -34,10 +34,9 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         nodeHandle_.param<double>("/move_base_node/offset", offset_, 2);
 
         //classes
-        objectAvoidance = new ObjectAvoidance(wheelbase_, carwidth_, tf);
-        nodeHandle_.param<double>("/move_base_node/min_object_size", objectAvoidance->minObjectSize_, 1);
+        objectAvoidance = new ObjectAvoidance(wheelbase_, carwidth_, corridorWidth_, minDistance_);
+        nodeHandle_.param<double>("/move_base_node/min_object_size", objectAvoidance->minObjectSize_, 0.05);
 
-        subScan_ = nodeHandle_.subscribe("scan", 1000, &ObjectAvoidance::scanCallback, objectAvoidance);
 
         //output parameter
         if(doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance active!");
@@ -101,16 +100,15 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         } else {
             cmd_vel.linear.y = 1.0;
             steeringAngle = calcAngle(plan_[point]);
+            if(oldPoint != point) {
+                ROS_INFO("TLP: T.P. %i | x: %f | y: %f | a: %f",
+                         point,
+                         plan_[point].pose.position.x,
+                         plan_[point].pose.position.y,
+                         steeringAngle);
+            }
+            oldPoint = point;
         }
-
-        if(oldPoint != point) {
-            ROS_INFO("TLP: T.P. %i | x: %f | y: %f | a: %f",
-                     point,
-                     plan_[point].pose.position.x,
-                     plan_[point].pose.position.y,
-                     steeringAngle);
-        }
-        oldPoint = point;
 
         cmd_vel.linear.x = 0.5;
         cmd_vel.angular.z = steeringAngle*steeringAngleParameter_ + offset_;
