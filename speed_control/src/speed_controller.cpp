@@ -200,7 +200,7 @@ double SpeedController::calcCurveWeightSimple()
                 longAngle = fabs(acos(clip((vx * vx_base + vy * vy_base) / (dist * dist_base), 0.0, 1.0))*180/M_PI);
                 longValid = true;
 
-                std::cout << " longAngle: " << longAngle << std::endl;
+                // std::cout << " longAngle: " << longAngle << std::endl;
                 break;
             }
             else // Short threshold reached - switch to larger threshold
@@ -213,10 +213,28 @@ double SpeedController::calcCurveWeightSimple()
                 shortAngle = fabs(acos(clip((vx * vx_base + vy * vy_base) / (dist * dist_base), 0.0, 1.0))*180/M_PI);
                 shortValid = true;
 
-                std::cout << " shortAngle: " << shortAngle << std::endl;
+                // std::cout << " shortAngle: " << shortAngle << std::endl;
             } 
+        }   
+    }
+    accumulatedDistance = 0;
+    threshold = 0.1;
+    double angle = 0.0;
+    for (int i = 1; i < current_path.size(); i+= 1)
+    {
+        accumulatedDistance += calcDistance(current_path[i], current_path[i-1]);
+        if (accumulatedDistance > threshold)
+        {
+            vx = current_path[i].pose.position.x - current_path[0].pose.position.x;
+            vy = current_path[i].pose.position.y - current_path[0].pose.position.y;
+            dist = calcDistance(vx, vy);
+
+            angle = fabs(acos(clip((vx * vx_base + vy * vy_base) / (dist * dist_base), 0.0, 1.0))*180/M_PI);
+            threshold += 0.1;
+            std::cout << threshold << "," << angle << ",";
         }
     }
+    std::cout << std::endl;
     }
     // Convert angles to curve weights
     if (shortValid)
@@ -231,7 +249,6 @@ double SpeedController::calcCurveWeightSimple()
             weight += weight;
         }
         std::cout << "weight: " << weight << std::endl;
-        std::cout << "speed: " << 1580 - 20 * weight << std::endl;
         return weight;
     }
     else
