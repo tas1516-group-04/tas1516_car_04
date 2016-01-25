@@ -16,7 +16,7 @@ void SpeedController::planCallback(const nav_msgs::Path::ConstPtr &path)
 
     // Transform and store path
     current_path = path->poses;
-    transformPath(current_path);
+    // transformPath(current_path);
 
     plan_valid = true;
 }
@@ -29,7 +29,10 @@ void SpeedController::set_parameters(ros::NodeHandle &node_handle)
     node_handle.param<double>("/speed_control_node/angle_max", angle_max, 90.0);
     node_handle.param<double>("/speed_control_node/short_limit", short_limit, 40.0);
     node_handle.param<double>("/speed_control_node/long_limit", long_limit, 40.0);
+    node_handle.param<double>("/speed_control_node/short_dist", short_dist, 0.4);
+    node_handle.param<double>("/speed_control_node/long_dist", long_dist, 2.0);
 }
+
 
 double SpeedController::calcSpeed()
 { 
@@ -145,14 +148,13 @@ double SpeedController::calcCurveWeight(const double maxDist)
 double SpeedController::calcCurveWeightSimple()
 {
     double accumulatedDistance = 0.0;
-    double shortDist = 0.4, longDist = 2.0;
+    double shortDist = short_dist, longDist = long_dist;
     double shortAngle = 0.0, longAngle = 0.0;
     bool shortValid = false, longValid = false;
     double threshold = shortDist;
     double weight = 0.0;
 
     const double maxShort = short_limit, maxLong = long_limit;
-
 
     // Angle calculation with respect to the car
 //    for (int i = 1; i < current_path.size(); i += 1)

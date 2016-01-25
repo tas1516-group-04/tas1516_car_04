@@ -35,33 +35,30 @@ public:
 
 private:
 
-    //parameters
+    // parameters
     double carwidth_;
     double wheelbase_;
     bool doObstacleAvoidance_;
     double minDistance_;
     double steeringAngleParameter_;
     double laserMaxDist_;
-    int minObjectSize_;
+    double minObjectSize_;
     double offset_;
+    double corridorWidth_;
 
-    //variables
+    // variables
     bool goalIsReached_;
     bool initialized_;
     bool globalPlanIsSet_;
-    double steerAngleOld_;
+
+    // ros
     costmap_2d::Costmap2DROS* costmap_ros_;
     ros::NodeHandle nodeHandle_;
-    ros::Subscriber subScan_;
     tf::TransformListener* tf_;
     std::vector<geometry_msgs::PoseStamped> plan_;
-    geometry_msgs::PoseStamped robotPose_;
 
     //obstacle avoidance
     ObjectAvoidance *objectAvoidance;
-
-    //laser
-    std::vector<geometry_msgs::Pose> laserDataTf_;
 
     //debugging
     int oldPoint;
