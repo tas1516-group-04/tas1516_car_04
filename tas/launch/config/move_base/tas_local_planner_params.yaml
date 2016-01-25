@@ -2,7 +2,7 @@
   car_width: 0.4
   wheelbase: 0.355
   corridor_width: 0.5
-  obstacle_avoidance: false
+  obstacle_avoidance: true
   min_distance: 0.6
   steering_angle_parameter: 1
   min_object_size: 0.05
