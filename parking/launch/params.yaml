@@ -35,7 +35,7 @@ BACKWARD_SPEED_1: 1.1 #0.08 #1.1 original value, change is for KITT
 BACKWARD_SPEED_2: 0.8  #0.1 #0.8 original value, change is for KITT
 
 # threshold for IMU supported parking
-YAW_THRESHOLD: 0.55
+YAW_THRESHOLD: 0.50
 
 # Steering angle for first parking state (positive values, when driving backwards)
 STEERING_FIRST: 0.8
