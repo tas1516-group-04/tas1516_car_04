@@ -190,11 +190,11 @@ double SpeedController::calcCurveWeightSimple()
     // Angle calculation with respect to the path
     if (current_path.size() > 0)
     {    
-        double vx = 0.0, vx_base = current_path[6].pose.position.x - current_path[5].pose.position.x;
-        double vy = 0.0, vy_base = current_path[6].pose.position.y - current_path[5].pose.position.y;
+        double vx = 0.0, vx_base = current_path[1].pose.position.x - current_path[0].pose.position.x;
+        double vy = 0.0, vy_base = current_path[1].pose.position.y - current_path[0].pose.position.y;
         double dist = 0.0, dist_base = calcDistance(vx_base, vy_base);
     
-    for (int i = 6; i < current_path.size(); i += 1)
+    for (int i = 1; i < current_path.size(); i += 1)
     {
         accumulatedDistance += calcDistance(current_path[i], current_path[i-1]);
         if (accumulatedDistance > threshold)
@@ -208,7 +208,7 @@ double SpeedController::calcCurveWeightSimple()
                 longAngle = fabs(acos(clip((vx * vx_base + vy * vy_base) / (dist * dist_base), 0.0, 1.0))*180/M_PI);
                 longValid = true;
 
-                std::cout << " longAngle: " << longAngle << std::endl;
+                // std::cout << " longAngle: " << longAngle << std::endl;
                 break;
             }
             else // Short threshold reached - switch to larger threshold
@@ -221,13 +221,13 @@ double SpeedController::calcCurveWeightSimple()
                 shortAngle = fabs(acos(clip((vx * vx_base + vy * vy_base) / (dist * dist_base), 0.0, 1.0))*180/M_PI);
                 shortValid = true;
 
-                std::cout << " shortAngle: " << shortAngle << std::endl;
+                // std::cout << " shortAngle: " << shortAngle << std::endl;
             } 
         }   
     }
 
     // Test multiple angles
- /*   accumulatedDistance = 0;
+    accumulatedDistance = 0;
     threshold = 0.1;
     double angle = 0.0;
     for (int i = 1; i < current_path.size(); i+= 1)
@@ -245,7 +245,7 @@ double SpeedController::calcCurveWeightSimple()
         }
     }
     std::cout << std::endl;
-*/
+
     }
 
 

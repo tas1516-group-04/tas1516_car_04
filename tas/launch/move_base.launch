@@ -17,12 +17,12 @@
 	  <param name="global_frame_id" value="map"/>
 
 	  <!-- Parameters for initial pose-->
-	  <param name="initial_pose_x" value="12.00"/>
-	  <param name="initial_pose_y" value="19.00"/>
-	  <param name="initial_pose_a" value="4.5"/>
-	  <param name="initial_cov_xx" value="10"/>
-	  <param name="initial_cov_yy" value="10"/>
-	  <param name="initial_cov_aa" value="10"/>
+	  <param name="initial_pose_x" value="0.0"/>
+	  <param name="initial_pose_y" value="0.0"/>
+	  <param name="initial_pose_a" value="0.0"/>
+	  <param name="initial_cov_xx" value="1"/>
+	  <param name="initial_cov_yy" value="1"/>
+	  <param name="initial_cov_aa" value="1"/>
 
 
 	  <!-- :::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->

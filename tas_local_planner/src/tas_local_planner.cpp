@@ -36,7 +36,7 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
 
         //classes
         subScan_ = nodeHandle_.subscribe("scan", 1000, &LocalPlanner::scanCallback, this);
-        pubScanTf_ = nodeHandle_.advertise<sensor_msgs::PointCloud>("scanTf", 1000);
+        //pubScanTf_ = nodeHandle_.advertise<sensor_msgs::PointCloud>("scanTf", 1000);
 
         //output parameter
         if(doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance active!");
@@ -143,10 +143,12 @@ void LocalPlanner::filterLaserScan()
             laserPoints.push_back(newLaserPoint);
         }
     }
+    /*
     sensor_msgs::PointCloud pcl;
     pcl.header.frame_id = "laser";
     pcl.points = laserPoints;
     pubScanTf_.publish(pcl);
+    */
     //ROS_INFO("TLP: %i laser points", (int) laserPoints.size());
 }
 
@@ -168,7 +170,7 @@ bool LocalPlanner::objectInPath(geometry_msgs::PoseStamped targetPoint)
 
 bool LocalPlanner::pointInPath(double x, double y, geometry_msgs::PoseStamped targetPoint)
 {
-    if(pow(x-targetPoint.pose.position.x,2) + pow(y-targetPoint.pose.position.y,2) <= pow(carwidth_/2+0.05,2)){
+    if(pow(x-targetPoint.pose.position.x,2) + pow(y-targetPoint.pose.position.y,2) <= pow(carwidth_/2+0.1,2)){
         // return true if point in path
         return true;
     } else {
@@ -194,7 +196,6 @@ geometry_msgs::PoseStamped LocalPlanner::getNewTargetPoint(geometry_msgs::PoseSt
                      yInc.pose.position.x,
                      yInc.pose.position.y);
             return yInc; // which steering parameter?
-            break;
         }
         if(!objectInPath(yDec)) {
             ROS_INFO("TLP: Alternative: Right turn!");
@@ -202,7 +203,6 @@ geometry_msgs::PoseStamped LocalPlanner::getNewTargetPoint(geometry_msgs::PoseSt
                      yDec.pose.position.x,
                      yDec.pose.position.y);
             return yDec;
-            break;
         }
     }
     return targetPoint;
