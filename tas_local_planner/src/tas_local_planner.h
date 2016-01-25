@@ -11,7 +11,6 @@
 #include <sensor_msgs/LaserScan.h>
 #include <iostream>
 #include <fstream>
-#include "objectavoidance.h"
 
 using namespace std;
 
@@ -53,12 +52,26 @@ private:
 
     // ros
     costmap_2d::Costmap2DROS* costmap_ros_;
-    ros::NodeHandle nodeHandle_;
     tf::TransformListener* tf_;
     std::vector<geometry_msgs::PoseStamped> plan_;
 
     //obstacle avoidance
-    ObjectAvoidance *objectAvoidance;
+    double distToPoint_;
+    sensor_msgs::LaserScan::ConstPtr scan_;
+    std::vector<geometry_msgs::Point32> laserPoints;
+
+    // node handle
+    ros::NodeHandle nodeHandle_;
+    ros::Subscriber subScan_;
+    ros::Publisher pubScanTf_;
+
+    // functions
+    void filterLaserScan();
+    bool objectInPath(geometry_msgs::PoseStamped targetPoint);
+    bool pointInPath(double x, double y, geometry_msgs::PoseStamped targetPoint);
+    geometry_msgs::PoseStamped getNewTargetPoint(geometry_msgs::PoseStamped targetPoint);
+    geometry_msgs::PoseStamped doObstacleAvoidance(int targetPoint, std::vector<geometry_msgs::PoseStamped> plan, geometry_msgs::Twist& cmd_vel);
+    void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
 
     //debugging
     int oldPoint;
