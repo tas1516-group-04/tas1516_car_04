@@ -31,12 +31,20 @@ void SpeedController::set_parameters(ros::NodeHandle &node_handle)
     node_handle.param<double>("/speed_control_node/long_limit", long_limit, 40.0);
     node_handle.param<double>("/speed_control_node/short_dist", short_dist, 0.4);
     node_handle.param<double>("/speed_control_node/long_dist", long_dist, 2.0);
+    node_handle.param<double>("/speed_control_node/min_vel", min_vel, 1560.0);
+    node_handle.param<double>("/speed_control_node/max_vel", max_vel, 1580.0);
 }
 
 
 double SpeedController::calcSpeed()
-{ 
-    return calcCurveWeightSimple();
+{
+    // Weight between [0,1]
+    double weight = calcCurveWeightSimple();
+
+    // Speed controller has no path to comute velocity -> Car should be at rest
+    if (weight == -1) return 1500.0;
+    // Linear speed control between bounded values
+    else return clip(max_vel - (max_vel - min_vel) * weight, min_vel, max_vel);
 }
 
 void SpeedController::transformPath(std::vector<geometry_msgs::PoseStamped> &path)
@@ -217,6 +225,8 @@ double SpeedController::calcCurveWeightSimple()
             } 
         }   
     }
+
+    // Test multiple angles
     accumulatedDistance = 0;
     threshold = 0.1;
     double angle = 0.0;
@@ -235,7 +245,10 @@ double SpeedController::calcCurveWeightSimple()
         }
     }
     std::cout << std::endl;
+
     }
+
+
     // Convert angles to curve weights
     if (shortValid)
     {

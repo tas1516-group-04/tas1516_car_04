@@ -44,8 +44,7 @@ int main(int argc, char** argv)
                         if (autonomous_control.vel_linearVelocity != -1)
                         {
                             // vel_linearVelocity will be between 0 and 1
-                            autonomous_control.control_servo.x =
-                                    clip(MAX_VEL - (MAX_VEL - MIN_VEL) * autonomous_control.vel_linearVelocity, MIN_VEL, MAX_VEL);
+                            autonomous_control.control_servo.x = autonomous_control.vel_linearVelocity;
                         }
                         else
                         {

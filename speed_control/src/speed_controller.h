@@ -37,6 +37,7 @@ private:
     double angle_min, angle_max;
     double short_limit, long_limit;
     double short_dist, long_dist;
+    double min_vel, max_vel;
 
     // Transform a path from map to base_link frame
     void transformPath(std::vector<geometry_msgs::PoseStamped> &);
