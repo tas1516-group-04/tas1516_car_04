@@ -32,11 +32,11 @@ void LocalPlanner::initialize(std::string name, tf::TransformListener* tf, costm
         nodeHandle_.param<double>("/move_base_node/steering_angle_parameter", steeringAngleParameter_, 0.6);
         nodeHandle_.param<double>("/move_base_node/laser_max_dist", laserMaxDist_, 2);
         nodeHandle_.param<double>("/move_base_node/offset", offset_, 2);
+        nodeHandle_.param<double>("/move_base_node/min_object_size", minObjectSize_, 1);
 
         //classes
-        objectAvoidance = new ObjectAvoidance(wheelbase_, carwidth_, corridorWidth_, minDistance_);
-        nodeHandle_.param<double>("/move_base_node/min_object_size", objectAvoidance->minObjectSize_, 0.05);
-
+        subScan_ = nodeHandle_.subscribe("scan", 1000, &LocalPlanner::scanCallback, this);
+        pubScanTf_ = nodeHandle_.advertise<sensor_msgs::PointCloud>("scanTf", 1000);
 
         //output parameter
         if(doObstacleAvoidance_) ROS_INFO("TLP: Obstacle avoidance active!");
@@ -81,22 +81,22 @@ bool LocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
         */
         //
         while(calcDistance(origin, plan_[point]) < minDistance_ || plan_[point].pose.position.x < 0) {
-           point++;
+            point++;
             if(point == plan_.size() - 1) break;
         }
 
         // max angle decreases over distance: angle = atan(carwidth_/distance)
         if(!(point == plan_.size() - 1)) {
-        while(abs(plan_[point].pose.position.y) < corridorWidth_){
-            point++;
-            if(point == plan_.size() - 1) break;
-        }
+            while(abs(plan_[point].pose.position.y) < corridorWidth_){
+                point++;
+                if(point == plan_.size() - 1) break;
+            }
         }
 
         // calc simple steering angle
         double steeringAngle;
         if(doObstacleAvoidance_) {
-            steeringAngle = calcAngle(objectAvoidance->doObstacleAvoidance(point, plan_, cmd_vel));
+            steeringAngle = calcAngle(doObstacleAvoidance(point, plan_, cmd_vel));
         } else {
             cmd_vel.linear.y = 1.0;
             steeringAngle = calcAngle(plan_[point]);
@@ -128,6 +128,112 @@ bool LocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) 
 }
 bool LocalPlanner::isGoalReached() {
     return goalIsReached_;
+}
+
+void LocalPlanner::filterLaserScan()
+{
+    laserPoints.clear();
+    int numberLaserPoints = (int) ( (abs(scan_->angle_min) + abs(scan_->angle_max))/scan_->angle_increment);
+    for(int i = 0; i < numberLaserPoints-1; i++) {
+        geometry_msgs::Point32 newLaserPoint;
+        newLaserPoint.x = cos(scan_->angle_min + scan_->angle_increment*i)*scan_->ranges[i];
+        newLaserPoint.y = sin(scan_->angle_min + scan_->angle_increment*i)*scan_->ranges[i];
+        if(abs(newLaserPoint.y) < corridorWidth_ + wheelbase_/2
+                || newLaserPoint.x < minDistance_) {
+            laserPoints.push_back(newLaserPoint);
+        }
+    }
+    sensor_msgs::PointCloud pcl;
+    pcl.header.frame_id = "laser";
+    pcl.points = laserPoints;
+    pubScanTf_.publish(pcl);
+    //ROS_INFO("TLP: %i laser points", (int) laserPoints.size());
+}
+
+bool LocalPlanner::objectInPath(geometry_msgs::PoseStamped targetPoint)
+{
+    int consecutivePointsInPath = 0;
+    double maxConsecutivePointsInPath =  minObjectSize_/(tan(2.8/640)*distToPoint_);
+    for(std::vector<geometry_msgs::Point32>::iterator it = laserPoints.begin(); it != laserPoints.end(); it++){
+        // point has to be in path and in range
+        if(pointInPath(it->x, it->y, targetPoint)) {
+            consecutivePointsInPath++;
+        } else {
+            if(consecutivePointsInPath > 1+maxConsecutivePointsInPath) return true;
+            consecutivePointsInPath = 0;
+        }
+    }
+    return false;
+}
+
+bool LocalPlanner::pointInPath(double x, double y, geometry_msgs::PoseStamped targetPoint)
+{
+    if(pow(x-targetPoint.pose.position.x,2) + pow(y-targetPoint.pose.position.y,2) <= pow(carwidth_/2+0.05,2)){
+        // return true if point in path
+        return true;
+    } else {
+        // return false otherwise
+        return false;
+    }
+}
+
+geometry_msgs::PoseStamped LocalPlanner::getNewTargetPoint(geometry_msgs::PoseStamped targetPoint)
+{
+    geometry_msgs::PoseStamped yInc;
+    yInc.pose.position.x = targetPoint.pose.position.x;
+    geometry_msgs::PoseStamped yDec;
+    yDec.pose.position.x = targetPoint.pose.position.x;
+    for(int i = 1; i < 20; i++) {
+        yInc.pose.position.y = targetPoint.pose.position.y + i * 0.05;
+        yDec.pose.position.y = targetPoint.pose.position.y - i * 0.05;
+
+        // decide what to do
+        if(!objectInPath(yInc)) {
+            ROS_INFO("TLP: Alternative: Left turn! ");
+            ROS_INFO("TLP: o.a. | x: %f | y: %f ",
+                     yInc.pose.position.x,
+                     yInc.pose.position.y);
+            return yInc; // which steering parameter?
+            break;
+        }
+        if(!objectInPath(yDec)) {
+            ROS_INFO("TLP: Alternative: Right turn!");
+            ROS_INFO("TLP: o.a. | x: %f | y: %f ",
+                     yDec.pose.position.x,
+                     yDec.pose.position.y);
+            return yDec;
+            break;
+        }
+    }
+    return targetPoint;
+}
+
+geometry_msgs::PoseStamped LocalPlanner::doObstacleAvoidance(int targetPoint, std::vector<geometry_msgs::PoseStamped> plan, geometry_msgs::Twist &cmd_vel)
+{
+    filterLaserScan();
+    for(std::vector<geometry_msgs::PoseStamped>::iterator it = plan.begin(); it != plan.begin()+targetPoint; it++) {
+        distToPoint_ = sqrt(pow(it->pose.position.x,2)+pow(it->pose.position.y,2));
+        if(objectInPath(*it)) {
+            ROS_INFO("TLP: Object in Path!");
+            // break if object in path
+            cmd_vel.linear.y = 0.0;
+            return getNewTargetPoint(*it);
+        }
+        // safety mechanism
+        //if(it == plan.end()) break;
+    }
+    // dont break if no object in path
+    ROS_INFO("TLP: T.P. %i | x: %f | y: %f",
+             targetPoint,
+             plan[targetPoint].pose.position.x,
+             plan[targetPoint].pose.position.y);
+    cmd_vel.linear.y = 1.0;
+    return plan[targetPoint];
+}
+
+void LocalPlanner::scanCallback(const sensor_msgs::LaserScan::ConstPtr &scan)
+{
+    scan_ = scan;
 }
 
 // distance between two PoseStamped poses

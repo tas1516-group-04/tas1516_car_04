@@ -188,4 +188,4 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_library(tas_local_planner_lib src/tas_local_planner.cpp  src/objectavoidance.cpp)
+add_library(tas_local_planner_lib src/tas_local_planner.cpp)
