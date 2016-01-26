@@ -6,7 +6,9 @@ Author: Thomas Eiband
 The package "parking" is in charge of the parallel parking task. The code is implemented in `parking_node.cpp`.
 
 To guarantee a good reproducability of the car's trajectories, two criterias for the parking progress were introduced:
+
 1. The car is aligned parallely at a certain distance to the wall during the parking progress, achieved by a P-controller. This controller takes the front laser distance at an angle of 90° to the left side wall as the process variable and the angular velocity as the control input to steer the car parallely along the wall.
+
 2. The backward parking state starts with a fixed steering angle until the change in orientation reaches a threshold, where the orientation is measured by the IMU. After that point, the steering angle is reversed to its maximum and the car drives into the gap.
 
 The package "parking_control" is an adaption of the provided package "tas_autonomous_control". The commanded speeds come directly via the `/cmd_vel` topic from the parking package, described above.
