@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<launch>
+  <master auto="start"/>
+  <param name="/use_sim_time" value="false"/>
+
+  <!-- Set up hardware -->
+  <include file="$(find tas)/launch/hardware.launch" />
+
+  <!-- Set up fake odomotry -->
+  <include file="$(find tas)/launch/odom.launch" />
+
+  <!-- Set up move base package-->
+  <!-- include file="$(find tas)/launch/move_base.launch" /-->
+
+  <node pkg = "parking_control" type="parking_control_node" name="parking_control_node" output="screen"/>
+  <!--node pkg = "parking" type="parking_node" name="parking_node" output="screen"/-->
+
+</launch>
