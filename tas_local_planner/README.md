@@ -8,18 +8,23 @@ Based on the global plan the TLP calculates the steering angle for an ackermann 
 ### Activating the TLP
 To use the TLP you have to set the TLP as the base_local_planner in the move base launch file
 
-<param name="base_local_planner" value="tas_local_planner/LocalPlanner"/>
+`<param name="base_local_planner" value="tas_local_planner/LocalPlanner"/>`
 
 and load the parameter file for the TLP
-<rosparam file="$(find tas)/launch/config/move_base/tas_local_planner_params.yaml" command="load"/>
 
+`<rosparam file="$(find tas)/launch/config/move_base/tas_local_planner_params.yaml" command="load"/>`
 
-### How does the TLP work?
-TLP is an fairly simple local planner which highly relies on the global plan.
+ Parameters		     	  	| Comment       								|
+| ------------------------------------|-----------------------------------------------------------------------	|
+| `car_width`	                 	| Width of the used car 	|
+| `wheelbase`			  	| Distance between the two axis		|
+| `corridor_width`			| Size of the corridor for target point search	|
+| `obstacle_avoidance`			| If true, obstacle is active|
+| `min_distance`			| Minimum distance of the target point|
+| `steering_angle_parameter`		| Increases or decrease steering angle by a percentage		|
+| `min_object_size`			| Minimum size of a detected object|
+| `offset`				| Offset in radians		|
 
-#### A little overview of the compute_velocity function
-The compute_velocity function is repeatedly called from the move_base to calculate the cmd_vel data.
-First, a target point which fulfills all boundaries (min distance, max sideways distance) is detected.
 
 
  
