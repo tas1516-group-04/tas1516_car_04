@@ -1,14 +1,19 @@
-%close all;
+close all;
 
-yaw = importdata('yaw.txt');
+yaw = importdata('~/yaw/19_01_2016_yaw-1.txt');
+%yaw = importdata('~/yaw/19_01_2016_yaw-2.txt');
+%yaw = importdata('~/yaw/19_01_2016_yaw.txt');
 
 r_yaw = -1.50221;
+    
+yaw = yaw(3:end);
 
-figure;
-plot(yaw);
+plot(yaw, 'LineWidth',2);
 hold on;
-plot(110, -1.68, 'x', 'LineWidth',2);
-plot(129, -2.114, 'x', 'LineWidth',2);
+plot(40, yaw(40), 'o', 'LineWidth',2);
+plot(75, yaw(75), 'o', 'LineWidth',2);
+plot(99, yaw(99),'o', 'LineWidth',2);
 %plot(102, r_yaw, 'x', 'LineWidth',2);
-legend('IMU yaw', 'start backward parking', 'steering reversal point (triggered by yaw)');
+ylim([min(yaw)-0.8 max(yaw)+0.2]);
+legend('IMU yaw', 'capture yaw from IMU', 'start backward parking', 'steering reversal point (triggered by yaw)');
 xlabel('timestep'); ylabel('yaw / rad');
