@@ -131,7 +131,7 @@ float angularControl(double min, double max, float angular_speed)
 // P controller for angular control
 float angularControlP (double min, double max, float angular_speed)
 {
-    const float P = 10;     // controller gain
+    const float P = 20;     // controller gain
     return angular_speed * P * (Front.left_dist - ((min+max) / 2));
 }
 
@@ -376,7 +376,7 @@ int main(int argc, char** argv)
         case SECOND_CORNER_END:
             // steer robot
             vel_msg.linear.x = LINEAR_SPEED;
-            vel_msg.angular.z = - 0.5 * STEERING_FIRST;
+            vel_msg.angular.z = - 0.2 * STEERING_FIRST;
             cmd_vel_pub.publish(vel_msg);
 
             if (Back.left_dist <= MAX_GAP_DEPTH) {
