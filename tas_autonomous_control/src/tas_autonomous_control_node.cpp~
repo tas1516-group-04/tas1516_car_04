@@ -1,6 +1,6 @@
 #define MAX_VEL 1580
 #define MIN_VEL 1560
-#define BREAK_VEL 1560
+#define BREAK_VEL 1550
 
 #include "control/control.h"
 
