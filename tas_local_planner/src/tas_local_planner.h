@@ -59,6 +59,7 @@ private:
     double distToPoint_;
     sensor_msgs::LaserScan::ConstPtr scan_;
     std::vector<geometry_msgs::Point32> laserPoints;
+    int direction; // 1 = left, 0 = undecided, -1 = right
 
     // node handle
     ros::NodeHandle nodeHandle_;
@@ -70,7 +71,7 @@ private:
     bool objectInPath(geometry_msgs::PoseStamped targetPoint);
     bool pointInPath(double x, double y, geometry_msgs::PoseStamped targetPoint);
     geometry_msgs::PoseStamped getNewTargetPoint(geometry_msgs::PoseStamped targetPoint);
-    geometry_msgs::PoseStamped doObstacleAvoidance(int targetPoint, std::vector<geometry_msgs::PoseStamped> plan, geometry_msgs::Twist& cmd_vel);
+    geometry_msgs::PoseStamped doObstacleAvoidance(int targetPoint, geometry_msgs::Twist &cmd_vel);
     void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
 
     //debugging
