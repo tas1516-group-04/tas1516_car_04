@@ -13,16 +13,15 @@ The package "parking_control" is an adaption of the provided package "tas_autono
 
 
 ### Start
-The parking progress is launched by
+The hardware for the parking progress is started by
 
-`roslaunch parking run.launch`
+`roslaunch parking run_parking.launch`
 
-where the launch file includes the parking parameters, defined in a parameter file.
-Additionally, the parking node itself need to be started by
+The parking node itself need to be started by
 
-`rosrun parking parking_node`
+`roslaunch parking run_node.launhc`
 
-The execution of this node is seperated from the launch file, such that the restarting of the parking progress can be easily achieved by restarting only this node. The Wii-Mote stays paired and the hardware nodes keep running during this time.
+This launch file includes the parking parameters, defined in a dedicated parameter file. The restarting of the parking progress can be easily achieved by restarting only this launch file. The Wii-Mote stays paired and the hardware nodes keep running.
 
 During the parking progress, the C-button of the Wii-Mote need to be hold for safety reasons.
 
@@ -44,7 +43,7 @@ The parameters are stored under the namespace *parking/*
 | `ANGULAR_SPEED`			| Angular parking speed									|
 | `BACKWARD_SPEED_1`			| 1st Backward linear speed, when initiating backward parking				|
 | `BACKWARD_SPEED_2`			| 2nd Backward linear speed, after steering is reversed					|
-| `YAW_THRESHOLD`			| Angular threshold, when car is in the orientation to reverse steering			|
+| `YAW_THRESHOLD`			| Angular threshold, when the car reached its orientation to reverse the steering	|
 | `STEERING_FIRST`			| Angular speed, when initiating backward parking					|
 
 
