@@ -1,4 +1,5 @@
 Author: Fabian Lechner
+----------------------------------
 
 ## Adaptive Speed Control
 The "speed_control" package implements an adaptive speed controller based on the global path.
