@@ -258,7 +258,6 @@ float LocalPlanner::calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::P
 
 /// calcs steering angle (ackermann steering behavior)
 double LocalPlanner::calcAngle(geometry_msgs::PoseStamped point) {
-    // radius from wheelbase and steerAngle
     if(point.pose.position.y == 0) return 0;
 
     // calc circle center

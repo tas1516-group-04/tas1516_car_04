@@ -58,13 +58,13 @@ private:
     //obstacle avoidance
     double distToPoint_;
     sensor_msgs::LaserScan::ConstPtr scan_;
-    std::vector<geometry_msgs::Point32> laserPoints;
+    std::vector<geometry_msgs::Point32> laserPoints; // frame = laser
     int direction; // 1 = left, 0 = undecided, -1 = right
 
     // node handle
     ros::NodeHandle nodeHandle_;
     ros::Subscriber subScan_;
-    ros::Publisher pubScanTf_;
+    ros::Publisher  pubScanTf_;
 
     // functions
     void filterLaserScan();
@@ -73,14 +73,11 @@ private:
     geometry_msgs::PoseStamped getNewTargetPoint(geometry_msgs::PoseStamped targetPoint);
     geometry_msgs::PoseStamped doObstacleAvoidance(int targetPoint, geometry_msgs::Twist &cmd_vel);
     void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
-
-    //debugging
-    int oldPoint;
-
-    // functions
     float calcDistance(geometry_msgs::PoseStamped& a, geometry_msgs::PoseStamped& b);
     double calcAngle(geometry_msgs::PoseStamped point);
 
+    //debugging
+    int oldPoint;
 };
 };
 #endif
