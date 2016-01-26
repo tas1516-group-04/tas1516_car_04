@@ -3,10 +3,10 @@
 <launch>
   <master auto="start"/>
   <param name="/use_sim_time" value="false"/>
-  
+
   <!-- Run map server  -->
-  <node name="map_server" pkg="map_server" type="map_server" args="$(find tas)/launch/config/map_server/LSR_3.yaml"/>
-  <!-- TODO: change map name here to map.yaml -->
+  <!-- node name="map_server" pkg="map_server" type="map_server" args="$(find tas)/launch/config/map_server/LSR_3.yaml"/-->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find tas)/launch/config/map_server/new_map.yaml"/>
 
    <!-- Run AMCL -->
   <node pkg="amcl" type="amcl" name="amcl" respawn="true">
@@ -17,12 +17,12 @@
 	  <param name="global_frame_id" value="map"/>
 
 	  <!-- Parameters for initial pose-->
-	  <param name="initial_pose_x" value="12.00"/>
-	  <param name="initial_pose_y" value="19.00"/>
-	  <param name="initial_pose_a" value="4.5"/>
-	  <param name="initial_cov_xx" value="10"/>
-	  <param name="initial_cov_yy" value="10"/>
-	  <param name="initial_cov_aa" value="10"/>
+	  <param name="initial_pose_x" value="0.0"/>
+	  <param name="initial_pose_y" value="0.0"/>
+	  <param name="initial_pose_a" value="0.0"/>
+	  <param name="initial_cov_xx" value="1"/>
+	  <param name="initial_cov_yy" value="1"/>
+	  <param name="initial_cov_aa" value="1"/>
 
 
 	  <!-- :::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->
@@ -70,11 +70,14 @@
 
   <!-- Original Move Base-->
   <node pkg="move_base" type="move_base" respawn="false" name="move_base_node" output="screen">
+    <param name="base_local_planner" value="tas_local_planner/LocalPlanner"/>
     <rosparam file="$(find tas)/launch/config/move_base/costmap_common_params.yaml" command="load" ns="global_costmap" />
     <rosparam file="$(find tas)/launch/config/move_base/costmap_common_params.yaml" command="load" ns="local_costmap" />
     <rosparam file="$(find tas)/launch/config/move_base/local_costmap_params.yaml" command="load" />
     <rosparam file="$(find tas)/launch/config/move_base/global_costmap_params.yaml" command="load" />
-    <rosparam file="$(find tas)/launch/config/move_base/base_local_planner_params.yaml" command="load" />
+    <rosparam file="$(find tas)/launch/config/move_base/tas_local_planner_params.yaml" command="load" />
+    <!--<rosparam file="$(find tas)/launch/config/move_base/base_local_planner_params.yaml" command="load" />-->
+    <param name="planner_frequency" value="5.0"/>
   </node>
 
   <!-- Run trajectory control -->

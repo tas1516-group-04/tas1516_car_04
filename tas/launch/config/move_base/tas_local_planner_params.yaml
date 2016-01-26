@@ -1,0 +1,9 @@
+# tlp parameter file
+  car_width: 0.5
+  wheelbase: 0.355
+  corridor_width: 0.3
+  obstacle_avoidance: true
+  min_distance: 1.0
+  steering_angle_parameter: 1.1
+  min_object_size: 0.07
+  offset: -0.03
