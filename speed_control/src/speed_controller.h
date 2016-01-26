@@ -1,5 +1,15 @@
 // Author: Fabian Lechner
 
+// SpeedController class. Computes velocity commands based on the global plan.
+//
+// Call the calcSpeed() function to update the velocity command.
+// The SpeedController is initialized by loading parameters from 'speed_control.yaml'.
+// Two approaches for computing the velocity are available, namely:
+// calcCurveWeight_accumulatingAngle()
+// calcCurveWeight_fixedPoints()
+//
+// The handling of IO to the ROS system is implemented in speed_control.cpp
+
 #ifndef SPEED_CONTROLLER_HPP
 #define SPEED_CONTROLLER_HPP
 

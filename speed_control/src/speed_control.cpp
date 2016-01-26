@@ -2,7 +2,7 @@
 
 // Main program for speed control. Constructs speed controller and handles IO with the ROS system.
 // Subscibed to:    move_base_node/NavfnROS/plan
-// Pubishes to:     vel
+// Publishes to:     vel
 // The speed controller is implemented as a class in speed_controller.cpp
 
 
