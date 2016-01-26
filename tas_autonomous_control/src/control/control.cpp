@@ -6,6 +6,8 @@ control::control()
 
     cmd_sub_ = nh_.subscribe<geometry_msgs::Twist>("cmd_vel", 1000, &control::cmdCallback,this);
 
+    vel_sub_ = nh_.subscribe<geometry_msgs::Twist>("vel", 100, &control::velCallback, this);
+
     odom_sub_ = nh_.subscribe<geometry_msgs::Twist>("odom_vel",1000,&control::odomCallback,this);
 
     wii_communication_sub = nh_.subscribe<std_msgs::Int16MultiArray>("wii_communication",1000,&control::wiiCommunicationCallback,this);
@@ -23,9 +25,10 @@ control::control()
 void control::odomCallback(const geometry_msgs::Twist::ConstPtr& msg)
 {
     odom_linearVelocity = msg->linear.x;
-    odom_angularVelocity = msg->angular.z;
+    //odom_angularVelocity = msg->angular.z;
+    odom_angularVelocity = 180/PI*msg->angular.z;
 
-    odom_steeringAngle = 180/PI*atan(odom_angularVelocity/odom_linearVelocity*CAR_LENGTH);
+    //odom_steeringAngle = 180/PI*atan(odom_angularVelocity/odom_linearVelocity*CAR_LENGTH);
 
     odom_steeringAngle = 1500 + 500/30*odom_steeringAngle;
 
@@ -39,10 +42,16 @@ void control::odomCallback(const geometry_msgs::Twist::ConstPtr& msg)
     }
 }
 
+void control::velCallback(const geometry_msgs::Twist::ConstPtr& msg)
+{
+    vel_linearVelocity = msg->linear.x;
+}
+
 //Subscribe to the local planner and map the steering angle (and the velocity-but we dont do that here-) to pulse width modulation values.
 void control::cmdCallback(const geometry_msgs::Twist::ConstPtr& msg)
 {
     cmd_linearVelocity = msg->linear.x;
+    cmd_activateSpeedController = msg->linear.y;
     cmd_angularVelocity = msg->angular.z;
 
     cmd_steeringAngle = 180/PI*atan(cmd_angularVelocity/cmd_linearVelocity*CAR_LENGTH);
