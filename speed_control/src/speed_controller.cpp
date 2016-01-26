@@ -1,3 +1,5 @@
+// Author: Fabian Lechner
+
 #include "speed_controller.h"
 
 // Default constructor for the SpeedController
@@ -21,9 +23,9 @@ void SpeedController::planCallback(const nav_msgs::Path::ConstPtr &path)
     plan_valid = true;
 }
 
+// Load parameters from parameter server and initialize class variables
 void SpeedController::set_parameters(ros::NodeHandle &node_handle)
 {
-    // Parameters from parameter server
     node_handle.param<int>("/speed_control_node/jump_segments", jump_segments, 5);
     node_handle.param<double>("/speed_control_node/angle_min", angle_min, 0.0);
     node_handle.param<double>("/speed_control_node/angle_max", angle_max, 90.0);
@@ -35,23 +37,26 @@ void SpeedController::set_parameters(ros::NodeHandle &node_handle)
     node_handle.param<double>("/speed_control_node/max_vel", max_vel, 1580.0);
 }
 
-
+// Compute a velocity and return it as a cmd_vel value for the speed in x direction
 double SpeedController::calcSpeed()
 {
     // Weight between [0,1]
-    double weight = calcCurveWeightSimple();
+    double weight = calcCurveWeight_fixedPoints();
 
-    // Speed controller has no path to comute velocity -> Car should be at rest
+    // Speed controller has no path to compute velocity -> Car should be at rest
     if (weight == -1) return 1500.0;
-    // Linear speed control between bounded values
+    // Linear mapping from weight to velocity between bounded values
     else return clip(max_vel - (max_vel - min_vel) * weight, min_vel, max_vel);
 }
 
+// Transform a path from map frame to base_link frame
 void SpeedController::transformPath(std::vector<geometry_msgs::PoseStamped> &path)
 {
     try
     {
+        // Wait for transformation to become available
         transform_listener->waitForTransform("base_link", "map", ros::Time::now(), ros::Duration(0.3));
+        // Transform every point in the path to new frame
         for (auto& path_segment : path)
         {
             transform_listener->transformPose("base_link", path_segment, path_segment);
@@ -65,17 +70,39 @@ void SpeedController::transformPath(std::vector<geometry_msgs::PoseStamped> &pat
 
 }
 
+// Locate the car on the path
+size_t SpeedController::locateOnPath(nav_msgs::PathConstPtr current_path) {
+    tf::StampedTransform carTransform;
+    transform_listener->lookupTransform("map", "base_link", ros::Time(0), carTransform);
+    geometry_msgs::PoseStamped carPose;
+
+    double minDistance = calcDistance((geometry_msgs::PoseStamped &) current_path->poses[0], carPose);
+    size_t closestPointIdx = 0;
+    // Iterate through path and find the index of the point to which the car is closest to
+    for (size_t i = 1; i < current_path->poses.size(); i += 5) {
+        double distance = calcDistance((geometry_msgs::PoseStamped &) current_path->poses[i], carPose);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestPointIdx = i;
+        }
+    }
+    return closestPointIdx;
+}
+
+// Euclidean distance between two poses
 double SpeedController::calcDistance(const geometry_msgs::PoseStamped &pose1, const geometry_msgs::PoseStamped &pose2)
 {
     return sqrt(pow((pose1.pose.position.x - pose2.pose.position.x), 2) +
                 pow((pose1.pose.position.y - pose2.pose.position.y), 2));
 }
 
+// Euclidean distance between two 2D-vectors
 double SpeedController::calcDistance(const double &x_diff, const double &y_diff)
 {
     return sqrt(x_diff*x_diff + y_diff*y_diff);
 }
 
+// Angle between pose2-pose1 and x-axis(base_link-frame)
 double SpeedController::calcAngle(const geometry_msgs::PoseStamped &pose1, const geometry_msgs::PoseStamped &pose2)
 {
 //    std::cout << std::setprecision(5)
@@ -85,13 +112,17 @@ double SpeedController::calcAngle(const geometry_msgs::PoseStamped &pose1, const
     return atan2(pose2.pose.position.y - pose1.pose.position.y, pose2.pose.position.x - pose1.pose.position.x);
 }
 
-
+// Force a value between lower and upper bounds
 double SpeedController::clip(double n, double lower, double upper)
 {
     return std::max(lower, std::min(n, upper));
 }
 
-double SpeedController::calcCurveWeight(const double maxDist)
+// Approach 1 - Accumulating Angle
+// maxDist -- maximum distance up to which angles will be accumulated
+// Sum all changes in orientation the car would accumulate when traversing the path
+// and calculates a weight based on the distance and accumulated angle.
+double SpeedController::calcCurveWeight_accumulatingAngle(const double maxDist)
 {
     double accumulatedDistance = 0.0;
     double accumulatedAngle = 0.0;
@@ -102,7 +133,9 @@ double SpeedController::calcCurveWeight(const double maxDist)
     // Check if plan is up to date and contains enough segments
     if (plan_valid)
     {
-        const int jump_segments = 10;
+        // Leave out some points in the path to smooth out inaccuracies and speed up computing
+        const int jump_segments = this->jump_segments;
+
         // Initialize with the first two poses so the iterative algorithm works
         double vx = 0.0, vx_prev = current_path[jump_segments].pose.position.x - current_path[0].pose.position.x;
         double vy = 0.0, vy_prev = current_path[jump_segments].pose.position.y - current_path[0].pose.position.y;
@@ -110,11 +143,11 @@ double SpeedController::calcCurveWeight(const double maxDist)
         double angle = 0.0;
         // Iterate over all poses and accumulate the angle between the segments (vectors)
         // Stop when distance reaches max or end of vector
-        // Leave out last 10 segments because of instabilisties <<<<< !!!!!!
-        // Jump 5 segments at a time to smooth jumps <<<<<< !!!!!!
+        // Leave out last 10 segments to avoid accumulationg angles when near the goal
+        // Jump several segments at a time to smooth out inaccuracies in the path
         for (int i = jump_segments; i < current_path.size()-10 && accumulatedDistance < maxDist; i += jump_segments)
         {
-            // Calculate current vector translated to the origin
+            // Calculate current vector translated into the origin
             vx = current_path[i].pose.position.x - current_path[i-jump_segments].pose.position.x;
             vy = current_path[i].pose.position.y - current_path[i-jump_segments].pose.position.y;
 
@@ -153,18 +186,25 @@ double SpeedController::calcCurveWeight(const double maxDist)
     return accumulatedAngle;
 }
 
-double SpeedController::calcCurveWeightSimple()
+// Approach 2 - Fixed Points
+// Points with fixed distance to the car are set in the path. As the car traverses through the path,
+// the points remain a fixed distance from the car following the shape of the path.
+// The relative orientation between point to car and current heading direction can be used to compute velocity commands.
+double SpeedController::calcCurveWeight_fixedPoints()
 {
+    // shortDist, longDist      -- distance of the observed points in the path relative to the car
+    // shortAngle, longAngle    -- angle at the short and long positions
+    // shortValid, longValid    -- set to true when a point at that distance could be set
+    // maxShorth, maxLong       -- maximal angles allowed for the shorth and long position
     double accumulatedDistance = 0.0;
     double shortDist = short_dist, longDist = long_dist;
     double shortAngle = 0.0, longAngle = 0.0;
+    const double maxShort = short_limit, maxLong = long_limit;
     bool shortValid = false, longValid = false;
     double threshold = shortDist;
     double weight = 0.0;
 
-    const double maxShort = short_limit, maxLong = long_limit;
-
-    // Angle calculation with respect to the car
+// Angle calculation with respect to the cars heading
 //    for (int i = 1; i < current_path.size(); i += 1)
 //    {
 //        accumulatedDistance += calcDistance(current_path[i], current_path[i-1]);
@@ -187,13 +227,15 @@ double SpeedController::calcCurveWeightSimple()
 //        }
 //    }
 
-    // Angle calculation with respect to the path
+    // Angle calculation with respect to the orientation of the first path segment
     if (current_path.size() > 0)
     {    
+        // Calculate vector formed by the first path segment
         double vx = 0.0, vx_base = current_path[6].pose.position.x - current_path[5].pose.position.x;
         double vy = 0.0, vy_base = current_path[6].pose.position.y - current_path[5].pose.position.y;
         double dist = 0.0, dist_base = calcDistance(vx_base, vy_base);
     
+    // Iterate over all path segments. Calculate angle at the segment where threshold is reached
     for (int i = 6; i < current_path.size(); i += 1)
     {
         accumulatedDistance += calcDistance(current_path[i], current_path[i-1]);
@@ -201,6 +243,7 @@ double SpeedController::calcCurveWeightSimple()
         {
             if (threshold == longDist) // Large threshold reached - leave loop
             {
+                // Compute vector formed by the path segment at large distance
                 vx = current_path[i].pose.position.x - current_path[0].pose.position.x;
                 vy = current_path[i].pose.position.y - current_path[0].pose.position.y;
                 dist = calcDistance(vx, vy);
@@ -213,6 +256,7 @@ double SpeedController::calcCurveWeightSimple()
             }
             else // Short threshold reached - switch to larger threshold
             {
+                // Compute vector formed by the path segment at short distance. Update threshold
                 vx = current_path[i].pose.position.x - current_path[0].pose.position.x;
                 vy = current_path[i].pose.position.y - current_path[0].pose.position.y;
                 dist = calcDistance(vx, vy);
@@ -226,30 +270,30 @@ double SpeedController::calcCurveWeightSimple()
         }   
     }
 
-    // Test multiple angles
- /*   accumulatedDistance = 0;
-    threshold = 0.1;
-    double angle = 0.0;
-    for (int i = 1; i < current_path.size(); i+= 1)
-    {
-        accumulatedDistance += calcDistance(current_path[i], current_path[i-1]);
-        if (accumulatedDistance > threshold)
-        {
-            vx = current_path[i].pose.position.x - current_path[0].pose.position.x;
-            vy = current_path[i].pose.position.y - current_path[0].pose.position.y;
-            dist = calcDistance(vx, vy);
+// Test multiple angles
+//    accumulatedDistance = 0;
+//    threshold = 0.1;
+//    double angle = 0.0;
+//    for (int i = 1; i < current_path.size(); i+= 1)
+//    {
+//        accumulatedDistance += calcDistance(current_path[i], current_path[i-1]);
+//        if (accumulatedDistance > threshold)
+//        {
+//            vx = current_path[i].pose.position.x - current_path[0].pose.position.x;
+//            vy = current_path[i].pose.position.y - current_path[0].pose.position.y;
+//            dist = calcDistance(vx, vy);
 
-            angle = fabs(acos(clip((vx * vx_base + vy * vy_base) / (dist * dist_base), 0.0, 1.0))*180/M_PI);
-            threshold += 0.1;
-            std::cout << threshold << "," << angle << ",";
-        }
+//            angle = fabs(acos(clip((vx * vx_base + vy * vy_base) / (dist * dist_base), 0.0, 1.0))*180/M_PI);
+//            threshold += 0.1;
+//            std::cout << threshold << "," << angle << ",";
+//        }
+//    }
+//    std::cout << std::endl;
     }
-    std::cout << std::endl;
-*/
-    }
 
 
-    // Convert angles to curve weights
+    // Convert angles to curve weights by bounding them in a predefined interval and dividing by
+    // the maximum angle allowed. Results in weight in interval [0,1]
     if (shortValid)
     {
         weight += 0.5 * clip(shortAngle, 0.01, maxShort)/maxShort;
@@ -264,12 +308,11 @@ double SpeedController::calcCurveWeightSimple()
         std::cout << "weight: " << weight << std::endl;
         return weight;
     }
+    // Return -1.0 if no valid weights can be computed
     else
     {
         return -1.0;
     }
-
-
 }
 
 
