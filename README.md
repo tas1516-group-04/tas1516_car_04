@@ -1,4 +1,4 @@
-##### Author: Thomas Eiband
+Author: Thomas Eiband
 ----------------------------------
 
 ## Parking
