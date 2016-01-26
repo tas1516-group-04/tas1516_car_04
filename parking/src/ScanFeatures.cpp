@@ -1,3 +1,6 @@
+// Author: Thomas Eiband
+// obsolete class for scan feature extraction
+
 #include "ScanFeatures.h"
 
 ScanFeatures::ScanFeatures()

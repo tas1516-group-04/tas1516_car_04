@@ -1,3 +1,7 @@
+// Author: Thomas Eiband
+// Obsolete class for point cloud based feature detection
+// Provides node handle for laser scan topics and extracted point cloud
+
 #ifndef LASERSCANTOPOINTCLOUD_H
 #define LASERSCANTOPOINTCLOUD_H
 

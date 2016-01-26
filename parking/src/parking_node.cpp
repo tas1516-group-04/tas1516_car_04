@@ -54,29 +54,6 @@ typedef struct {
     float yaw;
 } robot_t;
 
-typedef struct {
-    struct {
-        struct {
-            float xpos;
-            float ypos;
-        } start;
-        struct {
-            float xpos;
-            float ypos;
-        } end;
-    } first;
-    struct {
-        struct {
-            float xpos;
-            float ypos;
-        } start;
-        struct {
-            float xpos;
-            float ypos;
-        } end;
-    } second;
-} corners_t;
-
 // Global vars for laser ranges
 dist_t Front;
 dist_t Back;
@@ -242,9 +219,6 @@ int main(int argc, char** argv)
     int state = INIT;
 
     robot_t R;
-    corners_t C;
-
-    ScanFeatures scan_features;
 
     geometry_msgs::Twist vel_msg;
 
@@ -317,10 +291,6 @@ int main(int argc, char** argv)
                 ROS_INFO("Front.left_dist is in range for first corner detection");
                 cout << "Front.left_dist" << Front.left_dist << endl;
 
-                // capture corner position now for first corner start
-                C.first.start.xpos = R.xpos;
-                C.first.start.ypos = Front.new_dist;
-
                 cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = FIRST_CORNER_END;
@@ -338,11 +308,7 @@ int main(int argc, char** argv)
                 ROS_INFO("Front.left_dist is in range for first corner end");
                 cout << "Front.left_dist" << Front.left_dist << endl;
 
-                // capture robot position now for first corner end
-                C.first.end.xpos = R.xpos;
-                C.first.end.ypos = Front.new_dist;
-
-                // capture imu yaw here (when corner is detected, robot jums off to the right)
+                // capture imu yaw here
                 R.yaw = yaw;
                 ROS_INFO("Captured yaw from IMU");
                 
@@ -362,10 +328,6 @@ int main(int argc, char** argv)
                 ROS_INFO("Front.left_dist is in range for second corner start");
                 cout << "Front.left_dist" << Front.left_dist << endl;
 
-                // capture robot position now for second corner start
-                C.second.start.xpos = R.xpos;
-                C.second.start.ypos = Front.new_dist;
-
                 cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 
                 state = SECOND_CORNER_END;
@@ -382,10 +344,6 @@ int main(int argc, char** argv)
             if (Back.left_dist <= MAX_GAP_DEPTH) {
                 ROS_INFO("Back.left_dist is in range for second corner end");
                 cout << "Back.left_dist" << Back.left_dist << endl;
-
-                // capture robot position now for second corner end
-                C.second.end.xpos = R.xpos;
-                C.second.end.ypos = Front.new_dist;
 
                 cout << "yaw: " << yaw << " R.yaw" << R.yaw << endl;
 

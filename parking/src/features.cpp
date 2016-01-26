@@ -1,3 +1,6 @@
+// Author: Thomas Eiband
+// obsolete class for parking feature recognition
+
 #include "features.h"
 
 Features::Features()
@@ -25,7 +28,3 @@ bool Features::getStepThreshold()
 {
 
 }
-
-// TODO add closest point from cloud method
-
-// TODO add mean points function (over 10 times mean value)

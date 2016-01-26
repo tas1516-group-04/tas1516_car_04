@@ -1,3 +1,6 @@
+// Author: Thomas Eiband
+// obsolete class for parking feature recognition
+
 #ifndef FEATURES_H
 #define FEATURES_H
 

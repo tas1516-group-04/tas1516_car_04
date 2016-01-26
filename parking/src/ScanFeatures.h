@@ -1,3 +1,6 @@
+// Author: Thomas Eiband
+// obsolete class for scan feature extraction
+
 #ifndef SCAN_FEATURES_H
 #define SCAN_FEATURES_H
 
